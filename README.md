@@ -1,36 +1,139 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BGD Inventory System
 
-## Getting Started
+Multi-site inventory management system for BGD Solutions, built with Next.js and Supabase.
 
-First, run the development server:
+## Features
 
+- Multi-site inventory tracking
+- Stock movements (IN, OUT, transfers)
+- Purchase request workflow
+- Low stock alerts
+- Role-based access control (viewer, supervisor, manager, owner)
+- Mobile-friendly PWA support
+
+## Tech Stack
+
+- **Frontend**: Next.js 14+ (App Router), TypeScript, Tailwind CSS
+- **Backend**: Supabase (Postgres, Auth, RLS, RPC)
+- **Deployment**: Vercel (frontend), Supabase Cloud (backend)
+
+## Setup Instructions
+
+### 1. Prerequisites
+
+- Node.js 18+ installed
+- Supabase account (free tier works)
+- Vercel account (free tier works)
+
+### 2. Local Development Setup
+
+1. Clone the repository:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repository-url>
+cd inventory_bgd
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies:
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Create a Supabase project:
+   - Go to [supabase.com](https://supabase.com)
+   - Create a new project
+   - Note your project URL and anon key
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Set up environment variables:
+   - Copy `.env.example` to `.env.local`
+   - Fill in your Supabase credentials:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+   ```
 
-## Learn More
+5. Run database migrations:
+   - In Supabase dashboard, go to SQL Editor
+   - Run the migration files in order:
+     - `supabase/migrations/001_initial_schema.sql`
+     - `supabase/migrations/002_rls_policies.sql`
+     - `supabase/migrations/003_rpc_functions.sql`
+     - `supabase/migrations/004_triggers.sql`
+   - Optionally run `supabase/seed.sql` for test data
 
-To learn more about Next.js, take a look at the following resources:
+6. Configure Supabase Auth:
+   - In Supabase dashboard, go to Authentication > URL Configuration
+   - Add your local URL to redirect URLs: `http://localhost:3000/api/auth/callback`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+7. Start the development server:
+```bash
+npm run dev
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+8. Open [http://localhost:3000](http://localhost:3000)
 
-## Deploy on Vercel
+### 3. Create Initial Users
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Go to Supabase dashboard > Authentication > Users
+2. Create a user manually or use the sign-up flow
+3. Update the user's role in the `user_profiles` table:
+   ```sql
+   UPDATE user_profiles SET role = 'manager' WHERE email = 'your-email@example.com';
+   ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+4. For supervisors, assign them to sites:
+   ```sql
+   INSERT INTO site_user_roles (user_id, site_id)
+   SELECT id, 'site-id-here' FROM user_profiles WHERE email = 'supervisor@example.com';
+   ```
+
+## Deployment
+
+### Vercel Deployment
+
+1. Push your code to GitHub
+2. Go to [vercel.com](https://vercel.com)
+3. Import your repository
+4. Add environment variables:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+5. Deploy
+
+### Supabase Configuration
+
+1. Update Supabase Auth redirect URLs:
+   - Go to Authentication > URL Configuration
+   - Add your Vercel domain: `https://your-app.vercel.app/api/auth/callback`
+
+2. Ensure all migrations are run in production Supabase project
+
+## Project Structure
+
+```
+inventory_bgd/
+├── src/
+│   ├── app/              # Next.js App Router pages
+│   ├── components/       # React components
+│   ├── lib/              # Utilities, queries, RPC wrappers
+│   ├── hooks/            # React hooks
+│   └── types/            # TypeScript types
+├── supabase/
+│   └── migrations/       # Database migrations
+└── public/               # Static assets
+```
+
+## User Roles
+
+- **Viewer**: Read-only access to all sites
+- **Supervisor**: Can create purchase requests and register OUT for assigned sites
+- **Manager**: Full access to all sites, can approve/receive purchase requests
+- **Owner**: Same as manager (admin)
+
+## Development
+
+- Run linter: `npm run lint`
+- Build for production: `npm run build`
+- Start production server: `npm start`
+
+## License
+
+Private - BGD Solutions
