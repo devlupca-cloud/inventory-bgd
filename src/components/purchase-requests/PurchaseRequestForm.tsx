@@ -124,22 +124,28 @@ export default function PurchaseRequestForm() {
 
       <div>
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-medium">Items</h3>
-          <Button type="button" variant="secondary" onClick={addItem}>
-            Add Item
+          <h3 className="text-lg font-medium text-white">Items</h3>
+          <Button type="button" variant="secondary" size="sm" onClick={addItem}>
+            + Add Item
           </Button>
         </div>
 
         <div className="space-y-4">
+          {items.length === 0 && (
+            <div className="text-center py-8 border border-dashed border-neutral-700 rounded-lg">
+              <p className="text-neutral-500 text-sm">No items added yet. Click "Add Item" to start.</p>
+            </div>
+          )}
           {items.map((item, index) => (
-            <div key={index} className="border rounded-lg p-4 space-y-3">
+            <div key={index} className="border border-neutral-700 rounded-lg p-4 space-y-4 bg-neutral-800/50">
               <div className="flex justify-between items-start">
-                <h4 className="font-medium">Item {index + 1}</h4>
+                <h4 className="font-medium text-neutral-300">Item {index + 1}</h4>
                 <Button
                   type="button"
-                  variant="danger"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => removeItem(index)}
-                  className="text-xs py-1 px-2"
+                  className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
                 >
                   Remove
                 </Button>
@@ -166,6 +172,7 @@ export default function PurchaseRequestForm() {
                 min="0.01"
                 value={item.quantity_requested || ''}
                 onChange={(e) => updateItem(index, 'quantity_requested', parseFloat(e.target.value))}
+                placeholder="Enter quantity"
                 required
               />
 
@@ -174,6 +181,7 @@ export default function PurchaseRequestForm() {
                 type="text"
                 value={item.notes || ''}
                 onChange={(e) => updateItem(index, 'notes', e.target.value)}
+                placeholder="Add notes for this item..."
               />
             </div>
           ))}
@@ -185,16 +193,17 @@ export default function PurchaseRequestForm() {
         type="text"
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
+        placeholder="Add general notes for this request..."
       />
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded">
+        <div className="bg-red-500/20 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg text-sm">
           {error}
         </div>
       )}
 
       {success && (
-        <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded">
+        <div className="bg-green-500/20 border border-green-500/30 text-green-400 px-4 py-3 rounded-lg text-sm">
           Purchase request created successfully! Redirecting...
         </div>
       )}

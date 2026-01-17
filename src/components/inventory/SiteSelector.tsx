@@ -28,7 +28,9 @@ export default function SiteSelector({ value, onChange, label = 'Site' }: SiteSe
   }, [])
 
   if (loading) {
-    return <div className="text-sm text-gray-500">Loading sites...</div>
+    return (
+      <div className="text-sm text-neutral-500">Loading sites...</div>
+    )
   }
 
   return (

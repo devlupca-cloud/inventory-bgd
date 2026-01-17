@@ -1,8 +1,8 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { registerOut } from '@/lib/rpc/inventory'
 import SiteSelector from '@/components/inventory/SiteSelector'
-import { getProducts, Product } from '@/lib/queries/products'
+import { getProductsClient, Product } from '@/lib/queries/products'
 import Select from '@/components/ui/Select'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
@@ -18,6 +18,10 @@ export default function RegisterOutForm() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const router = useRouter()
+
+  useEffect(() => {
+    loadProducts()
+  }, [])
 
   const loadProducts = async () => {
     try {
@@ -59,33 +63,22 @@ export default function RegisterOutForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-5">
       <SiteSelector value={siteId} onChange={setSiteId} />
       
-      {siteId && (
-        <div>
-          <button
-            type="button"
-            onClick={loadProducts}
-            className="text-sm text-blue-600 hover:text-blue-800 mb-2"
-          >
-            Load Products
-          </button>
-          <Select
-            label="Product"
-            value={productId}
-            onChange={(e) => setProductId(e.target.value)}
-            required
-          >
-            <option value="">Select a product</option>
-            {products.map((product) => (
-              <option key={product.id} value={product.id}>
-                {product.name} ({product.unit})
-              </option>
-            ))}
-          </Select>
-        </div>
-      )}
+      <Select
+        label="Product"
+        value={productId}
+        onChange={(e) => setProductId(e.target.value)}
+        required
+      >
+        <option value="">Select a product</option>
+        {products.map((product) => (
+          <option key={product.id} value={product.id}>
+            {product.name} ({product.unit})
+          </option>
+        ))}
+      </Select>
 
       <Input
         label="Quantity"
@@ -94,6 +87,7 @@ export default function RegisterOutForm() {
         min="0.01"
         value={quantity}
         onChange={(e) => setQuantity(e.target.value)}
+        placeholder="Enter quantity"
         required
       />
 
@@ -102,21 +96,22 @@ export default function RegisterOutForm() {
         type="text"
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
+        placeholder="Add any notes..."
       />
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded">
+        <div className="bg-red-500/20 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg text-sm">
           {error}
         </div>
       )}
 
       {success && (
-        <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded">
+        <div className="bg-green-500/20 border border-green-500/30 text-green-400 px-4 py-3 rounded-lg text-sm">
           Consumption registered successfully! Redirecting...
         </div>
       )}
 
-      <Button type="submit" disabled={loading || !siteId || !productId || !quantity}>
+      <Button type="submit" disabled={loading || !siteId || !productId || !quantity} className="w-full">
         {loading ? 'Registering...' : 'Register Consumption (OUT)'}
       </Button>
     </form>

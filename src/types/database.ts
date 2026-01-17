@@ -16,6 +16,7 @@ export interface Database {
           address: string | null
           created_at: string
           updated_at: string
+          deleted_at: string | null
         }
         Insert: {
           id?: string
@@ -23,6 +24,7 @@ export interface Database {
           address?: string | null
           created_at?: string
           updated_at?: string
+          deleted_at?: string | null
         }
         Update: {
           id?: string
@@ -30,6 +32,7 @@ export interface Database {
           address?: string | null
           created_at?: string
           updated_at?: string
+          deleted_at?: string | null
         }
       }
       products: {
@@ -39,6 +42,7 @@ export interface Database {
           unit: string
           created_at: string
           updated_at: string
+          deleted_at: string | null
         }
         Insert: {
           id?: string
@@ -46,6 +50,7 @@ export interface Database {
           unit: string
           created_at?: string
           updated_at?: string
+          deleted_at?: string | null
         }
         Update: {
           id?: string
@@ -53,6 +58,7 @@ export interface Database {
           unit?: string
           created_at?: string
           updated_at?: string
+          deleted_at?: string | null
         }
       }
       site_inventory: {
@@ -141,6 +147,7 @@ export interface Database {
           notes: string | null
           created_at: string
           updated_at: string
+          deleted_at: string | null
         }
         Insert: {
           id?: string
@@ -152,6 +159,7 @@ export interface Database {
           notes?: string | null
           created_at?: string
           updated_at?: string
+          deleted_at?: string | null
         }
         Update: {
           id?: string
@@ -163,6 +171,7 @@ export interface Database {
           notes?: string | null
           created_at?: string
           updated_at?: string
+          deleted_at?: string | null
         }
       }
       purchase_request_items: {

@@ -22,57 +22,64 @@ export default function PurchaseRequestList({ requests }: PurchaseRequestListPro
 
   if (requests.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
-        No purchase requests found.
+      <div className="text-center py-12 text-neutral-500">
+        <svg className="w-12 h-12 mx-auto mb-4 text-neutral-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <p>No purchase requests found.</p>
       </div>
     )
   }
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+      <table className="min-w-full">
+        <thead>
+          <tr className="border-b border-neutral-800">
+            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
               Site
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
               Status
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
               Requested By
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
               Created
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
               Actions
             </th>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="divide-y divide-neutral-800">
           {requests.map((request) => (
-            <tr key={request.id} className="hover:bg-gray-50">
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                {request.site.name}
+            <tr key={request.id} className="hover:bg-neutral-800/50 transition-colors">
+              <td className="px-6 py-4 whitespace-nowrap">
+                <span className="text-sm font-medium text-white">{request.site.name}</span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <Badge variant={getStatusBadge(request.status)}>
                   {request.status}
                 </Badge>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                {request.requested_by_user.full_name || request.requested_by_user.email}
+              <td className="px-6 py-4 whitespace-nowrap">
+                <span className="text-sm text-neutral-300">
+                  {request.requested_by_user.full_name || request.requested_by_user.email}
+                </span>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {new Date(request.created_at).toLocaleDateString()}
+              <td className="px-6 py-4 whitespace-nowrap">
+                <span className="text-sm text-neutral-500">
+                  {new Date(request.created_at).toLocaleDateString()}
+                </span>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              <td className="px-6 py-4 whitespace-nowrap">
                 <Link
                   href={`/purchase-requests/${request.id}`}
-                  className="text-blue-600 hover:text-blue-900"
+                  className="text-sm text-green-500 hover:text-green-400 transition-colors"
                 >
-                  View
+                  View →
                 </Link>
               </td>
             </tr>

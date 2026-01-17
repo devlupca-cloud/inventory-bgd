@@ -1,19 +1,21 @@
 import ProtectedRoute from '@/components/auth/ProtectedRoute'
-import { getPurchaseRequests } from '@/lib/queries/purchase-requests'
-import PurchaseRequestList from '@/components/purchase-requests/PurchaseRequestList'
+import { getProducts } from '@/lib/queries/products.server'
 import Link from 'next/link'
 import Button from '@/components/ui/Button'
+import { hasRole } from '@/lib/utils/permissions'
+import ProductsList from '@/components/products/ProductsList'
 
-export default async function PurchaseRequestsPage() {
+export default async function ProductsPage() {
   return (
     <ProtectedRoute>
-      <PurchaseRequestsContent />
+      <ProductsContent />
     </ProtectedRoute>
   )
 }
 
-async function PurchaseRequestsContent() {
-  const requests = await getPurchaseRequests()
+async function ProductsContent() {
+  const products = await getProducts()
+  const canManage = await hasRole(['manager', 'owner'])
 
   return (
     <div className="min-h-screen bg-black">
@@ -29,7 +31,7 @@ async function PurchaseRequestsContent() {
                 Back
               </Link>
               <div className="h-6 w-px bg-neutral-700"></div>
-              <h1 className="text-xl font-bold text-white">Purchase Requests</h1>
+              <h1 className="text-xl font-bold text-white">Manage Products</h1>
             </div>
           </div>
         </div>
@@ -39,16 +41,17 @@ async function PurchaseRequestsContent() {
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h2 className="text-lg font-semibold text-white">All Requests</h2>
-            <p className="text-sm text-neutral-500">Manage purchase requests</p>
+            <h2 className="text-lg font-semibold text-white">All Products</h2>
+            <p className="text-sm text-neutral-500">{products.length} product{products.length !== 1 ? 's' : ''} registered</p>
           </div>
-          <Link href="/purchase-requests/new">
-            <Button>+ New Request</Button>
-          </Link>
+          {canManage && (
+            <Link href="/products/new">
+              <Button>+ New Product</Button>
+            </Link>
+          )}
         </div>
-        <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
-          <PurchaseRequestList requests={requests} />
-        </div>
+        
+        <ProductsList products={products} canManage={canManage} />
       </main>
     </div>
   )

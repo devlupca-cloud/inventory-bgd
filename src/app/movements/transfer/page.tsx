@@ -12,25 +12,29 @@ export default async function TransferPage() {
 
 async function TransferContent() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow">
+    <div className="min-h-screen bg-black">
+      {/* Navigation */}
+      <nav className="bg-neutral-900 border-b border-neutral-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center space-x-4">
-              <Link href="/inventory" className="text-gray-500 hover:text-gray-700">
-                ← Back to Inventory
+              <Link href="/inventory" className="flex items-center text-neutral-400 hover:text-white transition-colors">
+                <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Back
               </Link>
-              <h1 className="text-xl font-semibold text-gray-900">Transfer Between Sites</h1>
+              <div className="h-6 w-px bg-neutral-700"></div>
+              <h1 className="text-xl font-bold text-white">Transfer Between Sites</h1>
             </div>
           </div>
         </div>
       </nav>
 
-      <main className="max-w-3xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          <div className="bg-white shadow rounded-lg p-6">
-            <TransferForm />
-          </div>
+      {/* Main Content */}
+      <main className="max-w-2xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">
+          <TransferForm />
         </div>
       </main>
     </div>

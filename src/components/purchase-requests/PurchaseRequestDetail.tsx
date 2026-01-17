@@ -100,81 +100,91 @@ export default function PurchaseRequestDetail({
   }
 
   return (
-    <div className="bg-white shadow rounded-lg p-6 space-y-6">
-      <div className="flex justify-between items-start">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Purchase Request #{request.id.slice(0, 8)}</h2>
-          <p className="text-sm text-gray-500 mt-1">
-            Site: {request.site.name}
-          </p>
+    <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
+      {/* Header */}
+      <div className="px-6 py-5 border-b border-neutral-800">
+        <div className="flex justify-between items-start">
+          <div>
+            <h2 className="text-xl font-bold text-white">Request #{request.id.slice(0, 8)}</h2>
+            <p className="text-sm text-neutral-500 mt-1">
+              Site: {request.site.name}
+            </p>
+          </div>
+          <Badge variant={getStatusBadge(request.status)}>
+            {request.status}
+          </Badge>
         </div>
-        <Badge variant={getStatusBadge(request.status)}>
-          {request.status}
-        </Badge>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 text-sm">
-        <div>
-          <span className="font-medium text-gray-700">Requested By:</span>
-          <span className="ml-2 text-gray-900">
-            {request.requested_by_user.full_name || request.requested_by_user.email}
-          </span>
-        </div>
-        <div>
-          <span className="font-medium text-gray-700">Created:</span>
-          <span className="ml-2 text-gray-900">
-            {new Date(request.created_at).toLocaleString()}
-          </span>
-        </div>
-        {request.approved_by && (
+      {/* Details */}
+      <div className="px-6 py-4 border-b border-neutral-800">
+        <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <span className="font-medium text-gray-700">Approved At:</span>
-            <span className="ml-2 text-gray-900">
-              {request.approved_at ? new Date(request.approved_at).toLocaleString() : 'N/A'}
+            <span className="text-neutral-500">Requested By:</span>
+            <span className="ml-2 text-white">
+              {request.requested_by_user.full_name || request.requested_by_user.email}
             </span>
+          </div>
+          <div>
+            <span className="text-neutral-500">Created:</span>
+            <span className="ml-2 text-white">
+              {new Date(request.created_at).toLocaleString()}
+            </span>
+          </div>
+          {request.approved_by && (
+            <div>
+              <span className="text-neutral-500">Approved At:</span>
+              <span className="ml-2 text-white">
+                {request.approved_at ? new Date(request.approved_at).toLocaleString() : 'N/A'}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {request.notes && (
+          <div className="mt-4">
+            <span className="text-neutral-500 text-sm">Notes:</span>
+            <p className="mt-1 text-white">{request.notes}</p>
           </div>
         )}
       </div>
 
-      {request.notes && (
-        <div>
-          <span className="font-medium text-gray-700">Notes:</span>
-          <p className="mt-1 text-gray-900">{request.notes}</p>
-        </div>
-      )}
-
-      <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Items</h3>
+      {/* Items */}
+      <div className="px-6 py-4">
+        <h3 className="text-lg font-semibold text-white mb-4">Items</h3>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Requested</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Received</th>
+          <table className="min-w-full">
+            <thead>
+              <tr className="border-b border-neutral-700">
+                <th className="px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase">Product</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase">Requested</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase">Received</th>
                 {receivingMode && (
                   <>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qty to Receive</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Unit Price</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase">Qty to Receive</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase">Unit Price</th>
                   </>
                 )}
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-neutral-800">
               {items.map((item) => (
                 <tr key={item.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {item.product.name} ({item.product.unit})
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="text-sm text-white">{item.product.name}</span>
+                    <span className="text-xs text-neutral-500 ml-1">({item.product.unit})</span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {item.quantity_requested.toLocaleString()}
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="text-sm text-neutral-300">{item.quantity_requested.toLocaleString()}</span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {item.quantity_received.toLocaleString()}
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className={`text-sm font-medium ${item.quantity_received >= item.quantity_requested ? 'text-green-400' : 'text-neutral-400'}`}>
+                      {item.quantity_received.toLocaleString()}
+                    </span>
                   </td>
                   {receivingMode && (
                     <>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 py-3 whitespace-nowrap">
                         <Input
                           type="number"
                           step="0.01"
@@ -191,7 +201,7 @@ export default function PurchaseRequestDetail({
                           className="w-24"
                         />
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 py-3 whitespace-nowrap">
                         <Input
                           type="number"
                           step="0.01"
@@ -205,7 +215,7 @@ export default function PurchaseRequestDetail({
                             },
                           })}
                           className="w-24"
-                          placeholder="Optional"
+                          placeholder="$0.00"
                         />
                       </td>
                     </>
@@ -217,20 +227,22 @@ export default function PurchaseRequestDetail({
         </div>
       </div>
 
+      {/* Messages */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded">
+        <div className="mx-6 mb-4 bg-red-500/20 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg text-sm">
           {error}
         </div>
       )}
 
       {success && (
-        <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded">
+        <div className="mx-6 mb-4 bg-green-500/20 border border-green-500/30 text-green-400 px-4 py-3 rounded-lg text-sm">
           {success}
         </div>
       )}
 
+      {/* Actions */}
       {isManager && (
-        <div className="flex space-x-4">
+        <div className="px-6 py-4 border-t border-neutral-800 flex space-x-4">
           {request.status === 'submitted' && (
             <Button onClick={handleApprove} disabled={loading}>
               {loading ? 'Approving...' : 'Approve Request'}

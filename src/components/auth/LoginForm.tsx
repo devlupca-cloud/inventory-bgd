@@ -2,13 +2,15 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import Button from '@/components/ui/Button'
+import Input from '@/components/ui/Input'
 
 export default function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
-  const [mode, setMode] = useState<'magic' | 'password'>('magic')
+  const [mode, setMode] = useState<'magic' | 'password'>('password')
   const supabase = createClient()
   const router = useRouter()
 
@@ -52,49 +54,54 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-md">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
-            BGD Inventory System
+    <div className="flex min-h-screen items-center justify-center bg-black px-4">
+      <div className="w-full max-w-md space-y-8">
+        {/* Logo/Header */}
+        <div className="text-center">
+          <div className="mx-auto w-16 h-16 bg-green-500 rounded-2xl flex items-center justify-center mb-6">
+            <svg className="w-10 h-10 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+          </div>
+          <h2 className="text-3xl font-bold text-white">
+            BGD Inventory
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="mt-2 text-neutral-400">
             Sign in to your account
           </p>
         </div>
 
-        <div className="flex rounded-md shadow-sm" role="group">
-          <button
-            type="button"
-            onClick={() => setMode('magic')}
-            className={`px-4 py-2 text-sm font-medium rounded-l-lg border ${
-              mode === 'magic'
-                ? 'bg-blue-600 text-white border-blue-600'
-                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-            }`}
-          >
-            Magic Link
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode('password')}
-            className={`px-4 py-2 text-sm font-medium rounded-r-lg border-t border-r border-b ${
-              mode === 'password'
-                ? 'bg-blue-600 text-white border-blue-600'
-                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-            }`}
-          >
-            Password
-          </button>
-        </div>
+        {/* Card */}
+        <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-8">
+          {/* Toggle */}
+          <div className="flex rounded-lg bg-neutral-800 p-1 mb-6">
+            <button
+              type="button"
+              onClick={() => setMode('password')}
+              className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
+                mode === 'password'
+                  ? 'bg-green-500 text-black'
+                  : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              Password
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('magic')}
+              className={`flex-1 py-2 text-sm font-medium rounded-md transition-all ${
+                mode === 'magic'
+                  ? 'bg-green-500 text-black'
+                  : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              Magic Link
+            </button>
+          </div>
 
-        {mode === 'magic' ? (
-          <form className="mt-8 space-y-6" onSubmit={handleMagicLink}>
-            <div>
-              <label htmlFor="email" className="sr-only">
-                Email address
-              </label>
-              <input
+          {mode === 'magic' ? (
+            <form className="space-y-5" onSubmit={handleMagicLink}>
+              <Input
                 id="email"
                 name="email"
                 type="email"
@@ -102,81 +109,62 @@ export default function LoginForm() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="relative block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-                placeholder="Email address"
+                label="Email address"
+                placeholder="you@example.com"
               />
-            </div>
 
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="group relative flex w-full justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
+              <Button type="submit" disabled={loading} className="w-full">
                 {loading ? 'Sending...' : 'Send Magic Link'}
-              </button>
-            </div>
-          </form>
-        ) : (
-          <form className="mt-8 space-y-6" onSubmit={handlePasswordLogin}>
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="email-password" className="sr-only">
-                  Email address
-                </label>
-                <input
-                  id="email-password"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="relative block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-                  placeholder="Email address"
-                />
-              </div>
-              <div>
-                <label htmlFor="password" className="sr-only">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="relative block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-                  placeholder="Password"
-                />
-              </div>
-            </div>
+              </Button>
+            </form>
+          ) : (
+            <form className="space-y-5" onSubmit={handlePasswordLogin}>
+              <Input
+                id="email-password"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                label="Email address"
+                placeholder="you@example.com"
+              />
+              
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                label="Password"
+                placeholder="••••••••"
+              />
 
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="group relative flex w-full justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
+              <Button type="submit" disabled={loading} className="w-full">
                 {loading ? 'Signing in...' : 'Sign in'}
-              </button>
-            </div>
-          </form>
-        )}
+              </Button>
+            </form>
+          )}
 
-        {message && (
-          <div
-            className={`rounded-md p-4 ${
-              message.includes('Check your email')
-                ? 'bg-green-50 text-green-800'
-                : 'bg-red-50 text-red-800'
-            }`}
-          >
-            <p className="text-sm">{message}</p>
-          </div>
-        )}
+          {message && (
+            <div
+              className={`mt-4 rounded-lg p-4 text-sm ${
+                message.includes('Check your email')
+                  ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                  : 'bg-red-500/20 text-red-400 border border-red-500/30'
+              }`}
+            >
+              {message}
+            </div>
+          )}
+        </div>
+
+        <p className="text-center text-sm text-neutral-500">
+          BGD Solutions © {new Date().getFullYear()}
+        </p>
       </div>
     </div>
   )

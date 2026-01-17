@@ -4,8 +4,8 @@
   "description": "Multi-site inventory management for BGD Solutions",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#000000",
+  "background_color": "#000000",
+  "theme_color": "#22c55e",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",

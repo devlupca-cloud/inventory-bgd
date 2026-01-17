@@ -1,19 +1,21 @@
 import ProtectedRoute from '@/components/auth/ProtectedRoute'
-import { getPurchaseRequests } from '@/lib/queries/purchase-requests'
-import PurchaseRequestList from '@/components/purchase-requests/PurchaseRequestList'
+import { getSites } from '@/lib/queries/sites.server'
 import Link from 'next/link'
 import Button from '@/components/ui/Button'
+import { hasRole } from '@/lib/utils/permissions'
+import SitesList from '@/components/sites/SitesList'
 
-export default async function PurchaseRequestsPage() {
+export default async function SitesPage() {
   return (
     <ProtectedRoute>
-      <PurchaseRequestsContent />
+      <SitesContent />
     </ProtectedRoute>
   )
 }
 
-async function PurchaseRequestsContent() {
-  const requests = await getPurchaseRequests()
+async function SitesContent() {
+  const sites = await getSites()
+  const canManage = await hasRole(['manager', 'owner'])
 
   return (
     <div className="min-h-screen bg-black">
@@ -29,7 +31,7 @@ async function PurchaseRequestsContent() {
                 Back
               </Link>
               <div className="h-6 w-px bg-neutral-700"></div>
-              <h1 className="text-xl font-bold text-white">Purchase Requests</h1>
+              <h1 className="text-xl font-bold text-white">Manage Sites</h1>
             </div>
           </div>
         </div>
@@ -39,16 +41,17 @@ async function PurchaseRequestsContent() {
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h2 className="text-lg font-semibold text-white">All Requests</h2>
-            <p className="text-sm text-neutral-500">Manage purchase requests</p>
+            <h2 className="text-lg font-semibold text-white">All Sites</h2>
+            <p className="text-sm text-neutral-500">{sites.length} site{sites.length !== 1 ? 's' : ''} registered</p>
           </div>
-          <Link href="/purchase-requests/new">
-            <Button>+ New Request</Button>
-          </Link>
+          {canManage && (
+            <Link href="/sites/new">
+              <Button>+ New Site</Button>
+            </Link>
+          )}
         </div>
-        <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
-          <PurchaseRequestList requests={requests} />
-        </div>
+        
+        <SitesList sites={sites} canManage={canManage} />
       </main>
     </div>
   )
