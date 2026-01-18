@@ -17,6 +17,7 @@ export async function getSites(): Promise<Site[]> {
   const { data, error } = await supabase
     .from('sites')
     .select('*')
+    .is('deleted_at', null)
     .order('name')
   
   if (error) throw error

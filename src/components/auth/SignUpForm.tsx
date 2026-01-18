@@ -50,12 +50,29 @@ export default function SignUpForm() {
       if (error) {
         setMessage(error.message)
       } else if (data.user) {
-        setMessage('Account created! Please check your email to verify your account before signing in.')
-        // Clear form
-        setEmail('')
-        setPassword('')
-        setConfirmPassword('')
-        setFullName('')
+        // Create or update user profile with owner role
+        const { error: profileError } = await supabase
+          .from('user_profiles')
+          // @ts-expect-error - Supabase type inference issue
+          .upsert({
+            id: data.user.id,
+            email: data.user.email!,
+            full_name: fullName || null,
+            role: 'owner',
+          }, {
+            onConflict: 'id',
+          })
+
+        if (profileError) {
+          setMessage(profileError.message || 'Account created but profile creation failed')
+        } else {
+          setMessage('Account created! Please check your email to verify your account before signing in.')
+          // Clear form
+          setEmail('')
+          setPassword('')
+          setConfirmPassword('')
+          setFullName('')
+        }
       }
     } catch (err: any) {
       setMessage(err.message || 'An error occurred')
