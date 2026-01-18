@@ -5,10 +5,11 @@ export async function approvePurchaseRequest(
   adjustStock: boolean = false
 ): Promise<{ success: boolean; message?: string }> {
   const supabase = createClient()
+  // @ts-expect-error - Supabase RPC type inference issue
   const { data, error } = await supabase.rpc('rpc_approve_purchase_request', {
     p_request_id: requestId,
     p_adjust_stock: adjustStock,
-  } as any)
+  })
   
   if (error) {
     return { success: false, message: error.message }
@@ -27,10 +28,11 @@ export async function receivePurchaseRequest(
   itemsReceived: ItemReceived[]
 ): Promise<{ success: boolean; message?: string }> {
   const supabase = createClient()
+  // @ts-expect-error - Supabase RPC type inference issue
   const { data, error } = await supabase.rpc('rpc_receive_purchase_request', {
     p_request_id: requestId,
     p_items_received: itemsReceived,
-  } as any)
+  })
   
   if (error) {
     return { success: false, message: error.message }
