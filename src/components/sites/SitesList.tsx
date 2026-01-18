@@ -25,6 +25,7 @@ export default function SitesList({ sites, canManage }: SitesListProps) {
       // Soft delete - set deleted_at timestamp
       const { error } = await supabase
         .from('sites')
+        // @ts-expect-error - Supabase type inference issue
         .update({ deleted_at: new Date().toISOString() })
         .eq('id', siteId)
 

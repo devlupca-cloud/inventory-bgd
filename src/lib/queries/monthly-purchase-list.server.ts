@@ -60,7 +60,7 @@ export async function getMonthlyPurchaseList(
     }
   }
   
-  const requestIds = requests.map(r => r.id)
+  const requestIds = requests.map((r: { id: string }) => r.id)
   
   // Get all purchase request items that were actually received (quantity_received > 0)
   const { data: items, error: itemsError } = await supabase
@@ -97,27 +97,28 @@ export async function getMonthlyPurchaseList(
   }>()
   
   for (const item of items) {
-    const quantityReceived = item.quantity_received || 0
+    const itemData = item as any
+    const quantityReceived = itemData.quantity_received || 0
     if (quantityReceived <= 0) continue // Skip if nothing was received
     
     // Aggregate by product only (not by product+site)
-    const productKey = item.product_id
+    const productKey = itemData.product_id
     
     const existing = aggregated.get(productKey)
     if (existing) {
       // Add received quantity to total purchased
       existing.total_purchased += quantityReceived
       // Use the highest unit_price if multiple (or average? for now using highest)
-      if (item.unit_price && (!existing.unit_price || item.unit_price > existing.unit_price)) {
-        existing.unit_price = item.unit_price
+      if (itemData.unit_price && (!existing.unit_price || itemData.unit_price > existing.unit_price)) {
+        existing.unit_price = itemData.unit_price
       }
     } else {
       aggregated.set(productKey, {
-        product_id: item.product_id,
-        product_name: item.product.name,
-        product_unit: item.product.unit,
+        product_id: itemData.product_id,
+        product_name: itemData.product.name,
+        product_unit: itemData.product.unit,
         total_purchased: quantityReceived,
-        unit_price: item.unit_price || item.product.price || null,
+        unit_price: itemData.unit_price || itemData.product.price || null,
       })
     }
   }

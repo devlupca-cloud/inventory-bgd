@@ -71,5 +71,5 @@ export async function getAllInventoryServer(): Promise<SiteInventoryItem[]> {
   
   // Filter out master warehouse from the list
   // Master warehouse has its own dedicated page
-  return (data || []).filter(item => !item.site.is_master)
+  return (data || []).filter((item: any) => !item.site.is_master)
 }

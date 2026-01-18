@@ -16,7 +16,7 @@ interface DistributionFormProps {
 
 interface DistributionPlan {
   [itemId: string]: {
-    [siteId: string]: number // quantity to distribute to each site
+    [siteId: string]: number | undefined // quantity to distribute to each site
   }
 }
 
@@ -66,7 +66,9 @@ export default function DistributionForm({ requestId, items }: DistributionFormP
 
   const getTotalDistributed = (itemId: string): number => {
     const itemPlan = distributionPlan[itemId] || {}
-    return Object.values(itemPlan).reduce((sum, qty) => sum + (qty || 0), 0)
+    return Object.values(itemPlan)
+      .filter((qty): qty is number => qty !== undefined)
+      .reduce((sum, qty) => sum + qty, 0)
   }
 
   const getRemaining = (item: DistributionItem): number => {

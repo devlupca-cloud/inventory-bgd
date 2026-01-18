@@ -38,6 +38,7 @@ export default function SiteForm({ site }: SiteFormProps) {
       if (isEditing) {
         const { error: updateError } = await supabase
           .from('sites')
+          // @ts-expect-error - Supabase type inference issue
           .update({
             name: name.trim(),
             address: address.trim() || null,
@@ -50,6 +51,7 @@ export default function SiteForm({ site }: SiteFormProps) {
       } else {
         const { error: insertError } = await supabase
           .from('sites')
+          // @ts-expect-error - Supabase type inference issue
           .insert({
             name: name.trim(),
             address: address.trim() || null,

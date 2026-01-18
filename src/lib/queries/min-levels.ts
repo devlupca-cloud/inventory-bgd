@@ -41,7 +41,7 @@ export async function getMinLevel(siteId: string, productId: string): Promise<nu
     .maybeSingle()
   
   if (error) throw error
-  return data?.min_level || null
+  return (data as { min_level: number } | null)?.min_level || null
 }
 
 // Client-side function to set/update min level
@@ -55,6 +55,7 @@ export async function setMinLevel(
   // Use upsert to insert or update
   const { error } = await supabase
     .from('site_product_min_levels')
+    // @ts-expect-error - Supabase type inference issue
     .upsert({
       site_id: siteId,
       product_id: productId,

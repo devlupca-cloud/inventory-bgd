@@ -68,26 +68,26 @@ export async function getDashboardData() {
     .limit(5)
   
   // Get item counts for each request
-  const requestIds = (pendingRequestsData || []).map(r => r.id)
+  const requestIds = (pendingRequestsData || []).map((r: { id: string }) => r.id)
   const { data: itemCounts } = requestIds.length > 0 ? await supabase
     .from('purchase_request_items')
     .select('purchase_request_id')
     .in('purchase_request_id', requestIds) : { data: [] }
   
   // Get user profiles
-  const requestedByIds = [...new Set((pendingRequestsData || []).map(r => r.requested_by).filter(Boolean))]
+  const requestedByIds = [...new Set((pendingRequestsData || []).map((r: { requested_by: string }) => r.requested_by).filter(Boolean))]
   const { data: users } = requestedByIds.length > 0 ? await supabase
     .from('user_profiles')
     .select('id, email, full_name')
     .in('id', requestedByIds) : { data: [] }
   
-  const userMap = new Map((users || []).map(u => [u.id, u]))
-  const countMap = new Map()
-  ;(itemCounts || []).forEach(item => {
+  const userMap = new Map((users || []).map((u: { id: string; email: string; full_name: string | null }) => [u.id, u]))
+  const countMap = new Map<string, number>()
+  ;(itemCounts || []).forEach((item: { purchase_request_id: string }) => {
     countMap.set(item.purchase_request_id, (countMap.get(item.purchase_request_id) || 0) + 1)
   })
   
-  const pendingRequests = (pendingRequestsData || []).map(req => ({
+  const pendingRequests = (pendingRequestsData || []).map((req: any) => ({
     id: req.id,
     site_id: req.site_id,
     status: req.status,
@@ -115,15 +115,15 @@ export async function getDashboardData() {
     .limit(10)
   
   // Get user profiles for movements
-  const createdByIds = [...new Set((movementsData || []).map(m => m.created_by).filter(Boolean))]
+  const createdByIds = [...new Set((movementsData || []).map((m: { created_by: string }) => m.created_by).filter(Boolean))]
   const { data: movementUsers } = createdByIds.length > 0 ? await supabase
     .from('user_profiles')
     .select('id, email')
     .in('id', createdByIds) : { data: [] }
   
-  const movementUserMap = new Map((movementUsers || []).map(u => [u.id, u]))
+  const movementUserMap = new Map((movementUsers || []).map((u: { id: string; email: string }) => [u.id, u]))
   
-  const recentMovements = (movementsData || []).map(mov => ({
+  const recentMovements = (movementsData || []).map((mov: any) => ({
     id: mov.id,
     site_id: mov.site_id,
     product_id: mov.product_id,
@@ -158,10 +158,10 @@ export async function getDashboardData() {
     .order('created_at', { ascending: false })
 
   // Build site summaries
-  const siteSummaries: SiteSummary[] = (sites || []).map(site => {
-    const productCount = (inventoryCounts || []).filter(i => i.site_id === site.id).length
-    const lowCount = (lowStockCounts || []).filter(l => l.site_id === site.id).length
-    const lastMov = (lastMovements || []).find(m => m.site_id === site.id)
+  const siteSummaries: SiteSummary[] = (sites || []).map((site: { id: string; name: string; address: string | null }) => {
+    const productCount = (inventoryCounts || []).filter((i: { site_id: string }) => i.site_id === site.id).length
+    const lowCount = (lowStockCounts || []).filter((l: { site_id: string }) => l.site_id === site.id).length
+    const lastMov = (lastMovements || []).find((m: { site_id: string }) => m.site_id === site.id)
     
     return {
       id: site.id,
@@ -169,7 +169,7 @@ export async function getDashboardData() {
       address: site.address,
       total_products: productCount,
       low_stock_count: lowCount,
-      last_movement: lastMov?.created_at || null
+      last_movement: (lastMov as { created_at: string } | undefined)?.created_at || null
     }
   })
 

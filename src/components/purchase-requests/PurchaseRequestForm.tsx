@@ -88,6 +88,7 @@ export default function PurchaseRequestForm({ initialSiteId = '' }: PurchaseRequ
       // Items will be purchased and added to master warehouse, then distributed
       const { data: request, error: requestError } = await supabase
         .from('purchase_requests')
+        // @ts-expect-error - Supabase type inference issue
         .insert({
           site_id: selectedSiteId, // Site that is making the request
           status: 'draft',
@@ -98,10 +99,11 @@ export default function PurchaseRequestForm({ initialSiteId = '' }: PurchaseRequ
         .single()
 
       if (requestError) throw requestError
+      if (!request) throw new Error('Failed to create purchase request')
 
       // Create purchase request items
       const itemsToInsert = items.map(item => ({
-        purchase_request_id: request.id,
+        purchase_request_id: (request as { id: string }).id,
         product_id: item.product_id,
         quantity_requested: item.quantity_requested,
         unit_price: item.unit_price || 0,
@@ -110,6 +112,7 @@ export default function PurchaseRequestForm({ initialSiteId = '' }: PurchaseRequ
 
       const { error: itemsError } = await supabase
         .from('purchase_request_items')
+        // @ts-expect-error - Supabase type inference issue
         .insert(itemsToInsert)
 
       if (itemsError) throw itemsError

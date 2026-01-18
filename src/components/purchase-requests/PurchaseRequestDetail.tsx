@@ -75,6 +75,7 @@ export default function PurchaseRequestDetail({
       const supabase = createClient()
       const { error: updateError } = await supabase
         .from('purchase_requests')
+        // @ts-expect-error - Supabase type inference issue
         .update({ status: 'submitted' })
         .eq('id', request.id)
 

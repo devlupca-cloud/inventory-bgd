@@ -87,6 +87,7 @@ export default function SortableProductsTable({ products, canManage, totalProduc
     try {
       const { error } = await supabase
         .from('products')
+        // @ts-expect-error - Supabase type inference issue
         .update({ deleted_at: new Date().toISOString() })
         .eq('id', productId)
 

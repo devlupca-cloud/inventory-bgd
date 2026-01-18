@@ -23,7 +23,9 @@ export function usePermissions() {
             .eq('id', user.id)
             .single()
           
-          if (profile && (profile.role === 'manager' || profile.role === 'owner')) {
+          type UserRole = 'viewer' | 'supervisor' | 'manager' | 'owner'
+          const userRole = (profile as { role?: UserRole } | null)?.role
+          if (userRole && (userRole === 'manager' || userRole === 'owner')) {
             setCanManage(true)
           } else {
             setCanManage(false)

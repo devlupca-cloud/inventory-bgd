@@ -60,7 +60,7 @@ export async function getPurchaseRequests(): Promise<PurchaseRequest[]> {
   if (!requests || requests.length === 0) return []
   
   // Get user profiles for all requested_by IDs
-  const requestedByIds = [...new Set(requests.map(r => r.requested_by).filter(Boolean))]
+  const requestedByIds = [...new Set(requests.map((r: { requested_by: string }) => r.requested_by).filter(Boolean))]
   const { data: users, error: usersError } = await supabase
     .from('user_profiles')
     .select('id, email, full_name')
@@ -69,9 +69,9 @@ export async function getPurchaseRequests(): Promise<PurchaseRequest[]> {
   if (usersError) throw usersError
   
   // Map users to requests
-  const userMap = new Map((users || []).map(u => [u.id, u]))
+  const userMap = new Map((users || []).map((u: { id: string; email: string; full_name: string | null }) => [u.id, u]))
   
-  return (requests || []).map(request => ({
+  return (requests || []).map((request: any) => ({
     ...request,
     requested_by_user: userMap.get(request.requested_by) || {
       id: request.requested_by,
@@ -99,9 +99,10 @@ export async function getPurchaseRequest(requestId: string): Promise<PurchaseReq
   if (!request) return null
   
   // Get user profiles for requested_by and approved_by
-  const userIds = [request.requested_by]
-  if (request.approved_by) {
-    userIds.push(request.approved_by)
+  const requestData = request as any
+  const userIds = [requestData.requested_by]
+  if (requestData.approved_by) {
+    userIds.push(requestData.approved_by)
   }
   
   const { data: users, error: usersError } = await supabase
@@ -111,17 +112,17 @@ export async function getPurchaseRequest(requestId: string): Promise<PurchaseReq
   
   if (usersError) throw usersError
   
-  const userMap = new Map((users || []).map(u => [u.id, u]))
+  const userMap = new Map((users || []).map((u: { id: string; email: string; full_name: string | null }) => [u.id, u]))
   
   return {
-    ...request,
-    requested_by_user: userMap.get(request.requested_by) || {
-      id: request.requested_by,
+    ...requestData,
+    requested_by_user: userMap.get(requestData.requested_by) || {
+      id: requestData.requested_by,
       email: 'Unknown',
       full_name: null
     },
-    approved_by_user: request.approved_by ? (userMap.get(request.approved_by) || {
-      id: request.approved_by,
+    approved_by_user: requestData.approved_by ? (userMap.get(requestData.approved_by) || {
+      id: requestData.approved_by,
       email: 'Unknown',
       full_name: null
     }) : null

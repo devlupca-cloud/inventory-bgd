@@ -42,7 +42,7 @@ export async function getDistributionItems(): Promise<DistributionItem[]> {
   if (requestsError) throw requestsError
   if (!requests || requests.length === 0) return []
 
-  const requestIds = requests.map(r => r.id)
+  const requestIds = requests.map((r: { id: string }) => r.id)
 
   // Get purchase request items that have been received
   const { data: items, error: itemsError } = await supabase
@@ -63,7 +63,7 @@ export async function getDistributionItems(): Promise<DistributionItem[]> {
   if (!items || items.length === 0) return []
 
   // Get current stock in master for these products
-  const productIds = [...new Set(items.map(i => i.product_id))]
+  const productIds = [...new Set(items.map((i: { product_id: string }) => i.product_id))]
   const { data: masterInventory, error: inventoryError } = await supabase
     .from('site_inventory')
     .select('product_id, quantity_on_hand')
@@ -73,7 +73,7 @@ export async function getDistributionItems(): Promise<DistributionItem[]> {
   if (inventoryError) throw inventoryError
   
   const masterStockMap = new Map(
-    (masterInventory || []).map(inv => [inv.product_id, inv.quantity_on_hand])
+    (masterInventory || []).map((inv: { product_id: string; quantity_on_hand: number }) => [inv.product_id, inv.quantity_on_hand])
   )
 
   // Get stock movements to calculate how much was already distributed
@@ -90,7 +90,7 @@ export async function getDistributionItems(): Promise<DistributionItem[]> {
 
   // Calculate distributed quantities per product
   const distributedMap = new Map<string, number>()
-  transfers?.forEach(transfer => {
+  transfers?.forEach((transfer: { product_id: string; quantity: number }) => {
     const current = distributedMap.get(transfer.product_id) || 0
     distributedMap.set(transfer.product_id, current + transfer.quantity)
   })
@@ -99,12 +99,13 @@ export async function getDistributionItems(): Promise<DistributionItem[]> {
   const distributionItems: DistributionItem[] = []
   
   for (const item of items) {
-    const request = requests.find(r => r.id === item.purchase_request_id)
+    const itemData = item as any
+    const request = requests.find((r: { id: string }) => r.id === itemData.purchase_request_id)
     if (!request) continue
 
-    const masterStock = masterStockMap.get(item.product_id) || 0
-    const distributed = distributedMap.get(item.product_id) || 0
-    const quantityReceived = item.quantity_received || 0
+    const masterStock = masterStockMap.get(itemData.product_id) || 0
+    const distributed = distributedMap.get(itemData.product_id) || 0
+    const quantityReceived = itemData.quantity_received || 0
     
     // Available = what's in master that came from this purchase
     // We'll use a simple heuristic: if master stock >= quantity_received, assume it's available
@@ -112,18 +113,19 @@ export async function getDistributionItems(): Promise<DistributionItem[]> {
     const quantityAvailable = Math.min(masterStock, quantityReceived - distributed)
 
     if (quantityAvailable > 0) {
+      const requestData = request as any
       distributionItems.push({
-        purchase_request_id: item.purchase_request_id,
-        purchase_request_item_id: item.id,
-        product_id: item.product_id,
-        product_name: item.product.name,
-        product_unit: item.product.unit,
+        purchase_request_id: itemData.purchase_request_id,
+        purchase_request_item_id: itemData.id,
+        product_id: itemData.product_id,
+        product_name: itemData.product.name,
+        product_unit: itemData.product.unit,
         quantity_received: quantityReceived,
         quantity_distributed: distributed,
         quantity_available: quantityAvailable,
-        unit_price: item.unit_price || null,
-        site_id: request.site_id === masterSite.id ? null : request.site_id,
-        site_name: request.site?.id === masterSite.id ? null : request.site?.name || null,
+        unit_price: itemData.unit_price || null,
+        site_id: requestData.site_id === masterSite.id ? null : requestData.site_id,
+        site_name: requestData.site?.id === masterSite.id ? null : requestData.site?.name || null,
       })
     }
   }

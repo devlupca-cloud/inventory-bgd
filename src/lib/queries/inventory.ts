@@ -66,5 +66,5 @@ export async function getCurrentStock(siteId: string, productId: string): Promis
     .maybeSingle()
   
   if (error) throw error
-  return data?.quantity_on_hand || 0
+  return (data as { quantity_on_hand: number } | null)?.quantity_on_hand || 0
 }

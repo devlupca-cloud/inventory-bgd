@@ -29,7 +29,7 @@ export async function getMonthlyPurchaseOverview(): Promise<MonthlyPurchaseSumma
     return []
   }
   
-  const requestIds = requests.map(r => r.id)
+  const requestIds = requests.map((r: { id: string }) => r.id)
   
   // Get all purchase request items with product prices
   // We'll calculate based on quantity_requested and unit_price to show estimated purchase values
@@ -61,11 +61,12 @@ export async function getMonthlyPurchaseOverview(): Promise<MonthlyPurchaseSumma
   
   // Create a map of request IDs to created_at dates
   const requestDateMap = new Map(
-    requests.map(r => [r.id, new Date(r.created_at)])
+    requests.map((r: { id: string; created_at: string }) => [r.id, new Date(r.created_at)])
   )
   
   for (const item of items) {
-    const requestDate = requestDateMap.get(item.purchase_request_id)
+    const itemData = item as any
+    const requestDate = requestDateMap.get(itemData.purchase_request_id)
     if (!requestDate) continue
     
     const date = requestDate
@@ -74,14 +75,14 @@ export async function getMonthlyPurchaseOverview(): Promise<MonthlyPurchaseSumma
     const key = `${year}-${month}`
     
     // Calculate remaining quantity to purchase
-    const quantityRequested = item.quantity_requested || 0
-    const quantityReceived = item.quantity_received || 0
+    const quantityRequested = itemData.quantity_requested || 0
+    const quantityReceived = itemData.quantity_received || 0
     const remainingQuantity = quantityRequested - quantityReceived
     
     // Use unit_price from item, or fallback to product price if not set
-    const product = item.product as any
+    const product = itemData.product as any
     const productPrice = product?.price || 0
-    const unitPrice = item.unit_price && item.unit_price > 0 ? item.unit_price : productPrice
+    const unitPrice = itemData.unit_price && itemData.unit_price > 0 ? itemData.unit_price : productPrice
     
     // If item was fully received, use received quantity and price for historical data
     // Otherwise, use remaining quantity for items still to be purchased
@@ -95,14 +96,14 @@ export async function getMonthlyPurchaseOverview(): Promise<MonthlyPurchaseSumma
     if (existing) {
       existing.totalValue += itemValue
       existing.totalItems += quantityToCount
-      existing.requestIds.add(item.purchase_request_id)
+      existing.requestIds.add(itemData.purchase_request_id)
     } else {
       monthlyData.set(key, {
         year,
         month,
         totalValue: itemValue,
         totalItems: quantityToCount,
-        requestIds: new Set([item.purchase_request_id]),
+        requestIds: new Set([itemData.purchase_request_id]),
       })
     }
   }

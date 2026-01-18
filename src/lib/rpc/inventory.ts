@@ -5,17 +5,19 @@ export async function registerIn(
   productId: string,
   quantity: number,
   notes?: string
-) {
+): Promise<{ success: boolean; message?: string }> {
   const supabase = createClient()
   const { data, error } = await supabase.rpc('rpc_register_in', {
     p_site_id: siteId,
     p_product_id: productId,
     p_quantity: quantity,
     p_notes: notes || null,
-  })
+  } as any)
   
-  if (error) throw error
-  return data
+  if (error) {
+    return { success: false, message: error.message }
+  }
+  return data || { success: false, message: 'Unknown error' }
 }
 
 export async function registerOut(
@@ -30,7 +32,7 @@ export async function registerOut(
     p_product_id: productId,
     p_quantity: quantity,
     p_notes: notes || null,
-  })
+  } as any)
   
   if (error) {
     return { success: false, message: error.message }
@@ -52,7 +54,7 @@ export async function transferBetweenSites(
     p_product_id: productId,
     p_quantity: quantity,
     p_notes: notes || null,
-  })
+  } as any)
   
   if (error) {
     return { success: false, message: error.message }

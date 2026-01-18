@@ -25,6 +25,7 @@ export default function ProductsList({ products, canManage }: ProductsListProps)
       // Soft delete - set deleted_at timestamp
       const { error } = await supabase
         .from('products')
+        // @ts-expect-error - Supabase type inference issue
         .update({ deleted_at: new Date().toISOString() })
         .eq('id', productId)
 
