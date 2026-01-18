@@ -26,11 +26,17 @@ export default function InventoryTable({ items, onProductClick }: InventoryTable
             <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
               Product
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-right text-xs font-medium text-neutral-500 uppercase tracking-wider">
               Quantity
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
               Unit
+            </th>
+            <th className="px-6 py-3 text-right text-xs font-medium text-neutral-500 uppercase tracking-wider">
+              Unit Price
+            </th>
+            <th className="px-6 py-3 text-right text-xs font-medium text-neutral-500 uppercase tracking-wider">
+              Total Value
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
               Last Updated
@@ -47,13 +53,23 @@ export default function InventoryTable({ items, onProductClick }: InventoryTable
               <td className="px-6 py-4 whitespace-nowrap">
                 <span className="text-sm font-medium text-white">{item.product.name}</span>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap">
+              <td className="px-6 py-4 whitespace-nowrap text-right">
                 <span className={`text-sm font-semibold ${item.quantity_on_hand > 0 ? 'text-green-400' : 'text-red-400'}`}>
                   {item.quantity_on_hand.toLocaleString()}
                 </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <span className="text-sm text-neutral-400">{item.product.unit}</span>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-right">
+                <span className="text-sm text-neutral-400">
+                  R$ {(item.product.price || 0).toFixed(2)}
+                </span>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-right">
+                <span className="text-sm font-medium text-green-400">
+                  R$ {((item.product.price || 0) * item.quantity_on_hand).toFixed(2)}
+                </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <span className="text-sm text-neutral-500">

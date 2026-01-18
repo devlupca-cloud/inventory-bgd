@@ -4,6 +4,7 @@ export interface Product {
   id: string
   name: string
   unit: string
+  price: number
   created_at: string
   updated_at: string
 }

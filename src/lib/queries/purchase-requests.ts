@@ -19,6 +19,11 @@ export interface PurchaseRequest {
     email: string
     full_name: string | null
   }
+  approved_by_user?: {
+    id: string
+    email: string
+    full_name: string | null
+  } | null
 }
 
 export interface PurchaseRequestItem {
@@ -28,6 +33,7 @@ export interface PurchaseRequestItem {
   quantity_requested: number
   quantity_received: number
   unit_price: number | null
+  current_quantity_observed: number | null
   notes: string | null
   product: {
     id: string
@@ -76,7 +82,7 @@ export async function getPurchaseRequestItems(requestId: string): Promise<Purcha
       product:products(*)
     `)
     .eq('purchase_request_id', requestId)
-    .order('created_at')
+    .order('id')
   
   if (error) throw error
   return data || []

@@ -26,7 +26,7 @@ export default async function ProtectedRoute({
       .single()
 
     if (!profile || !requiredRoles.includes(profile.role as any)) {
-      redirect('/inventory') // Redirect to a safe page if insufficient permissions
+      redirect('/') // Redirect to dashboard if insufficient permissions
     }
   }
 

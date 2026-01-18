@@ -1,21 +1,26 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import SiteSelector from '@/components/inventory/SiteSelector'
-import { getProducts, Product } from '@/lib/queries/products'
+import { getProductsClient, Product } from '@/lib/queries/products'
 import Select from '@/components/ui/Select'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
+import SiteSelector from '@/components/inventory/SiteSelector'
 import { useRouter } from 'next/navigation'
 
 interface PurchaseRequestItem {
   product_id: string
   quantity_requested: number
+  unit_price: number
   notes?: string
 }
 
-export default function PurchaseRequestForm() {
-  const [siteId, setSiteId] = useState('')
+interface PurchaseRequestFormProps {
+  initialSiteId?: string
+}
+
+export default function PurchaseRequestForm({ initialSiteId = '' }: PurchaseRequestFormProps) {
+  const [selectedSiteId, setSelectedSiteId] = useState<string>(initialSiteId)
   const [items, setItems] = useState<PurchaseRequestItem[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [notes, setNotes] = useState('')
@@ -31,15 +36,16 @@ export default function PurchaseRequestForm() {
 
   const loadProducts = async () => {
     try {
-      const data = await getProducts()
+      const data = await getProductsClient()
       setProducts(data)
     } catch (err) {
       console.error('Error loading products:', err)
     }
   }
 
+
   const addItem = () => {
-    setItems([...items, { product_id: '', quantity_requested: 0 }])
+    setItems([...items, { product_id: '', quantity_requested: 0, unit_price: 0 }])
   }
 
   const removeItem = (index: number) => {
@@ -58,7 +64,7 @@ export default function PurchaseRequestForm() {
     setError('')
     setSuccess(false)
 
-    if (!siteId) {
+    if (!selectedSiteId) {
       setError('Please select a site')
       setLoading(false)
       return
@@ -78,11 +84,12 @@ export default function PurchaseRequestForm() {
         return
       }
 
-      // Create purchase request (as draft)
+      // Create purchase request (as draft) - associated with the selected site
+      // Items will be purchased and added to master warehouse, then distributed
       const { data: request, error: requestError } = await supabase
         .from('purchase_requests')
         .insert({
-          site_id: siteId,
+          site_id: selectedSiteId, // Site that is making the request
           status: 'draft',
           requested_by: user.id,
           notes: notes || null,
@@ -97,6 +104,7 @@ export default function PurchaseRequestForm() {
         purchase_request_id: request.id,
         product_id: item.product_id,
         quantity_requested: item.quantity_requested,
+        unit_price: item.unit_price || 0,
         notes: item.notes || null,
       }))
 
@@ -120,7 +128,18 @@ export default function PurchaseRequestForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <SiteSelector value={siteId} onChange={setSiteId} />
+      <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-4">
+        <p className="text-sm text-blue-400">
+          <strong>Purchase Request:</strong> Create a request for items you need. Items will be purchased and added to the master warehouse, then distributed to sites as needed.
+        </p>
+      </div>
+
+      <SiteSelector
+        label="Site"
+        value={selectedSiteId}
+        onChange={setSelectedSiteId}
+        disabled={!!initialSiteId}
+      />
 
       <div>
         <div className="flex justify-between items-center mb-4">
@@ -153,28 +172,62 @@ export default function PurchaseRequestForm() {
 
               <Select
                 label="Product"
-                value={item.product_id}
-                onChange={(e) => updateItem(index, 'product_id', e.target.value)}
+                value={item.product_id || ''}
+                onChange={(e) => {
+                  const productId = e.target.value
+                  const product = products.find(p => p.id === productId)
+                  
+                  // Update both fields in a single state update
+                  const newItems = [...items]
+                  newItems[index] = {
+                    ...newItems[index],
+                    product_id: productId,
+                    unit_price: product ? (product.price || 0) : newItems[index].unit_price
+                  }
+                  setItems(newItems)
+                }}
                 required
               >
                 <option value="">Select a product</option>
                 {products.map((product) => (
                   <option key={product.id} value={product.id}>
-                    {product.name} ({product.unit})
+                    {product.name} ({product.unit}) - R$ {(product.price || 0).toFixed(2)}
                   </option>
                 ))}
               </Select>
 
-              <Input
-                label="Quantity Requested"
-                type="number"
-                step="0.01"
-                min="0.01"
-                value={item.quantity_requested || ''}
-                onChange={(e) => updateItem(index, 'quantity_requested', parseFloat(e.target.value))}
-                placeholder="Enter quantity"
-                required
-              />
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="Quantity Requested"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={item.quantity_requested || ''}
+                  onChange={(e) => updateItem(index, 'quantity_requested', parseFloat(e.target.value))}
+                  placeholder="Enter quantity"
+                  required
+                />
+
+                <Input
+                  label="Unit Price (R$)"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={item.unit_price || ''}
+                  readOnly
+                  className="bg-neutral-900/50 cursor-not-allowed"
+                  placeholder="0.00"
+                />
+              </div>
+
+              {item.quantity_requested > 0 && item.unit_price > 0 && (
+                <div className="text-right text-sm">
+                  <span className="text-neutral-400">Subtotal: </span>
+                  <span className="text-green-400 font-medium">
+                    R$ {(item.quantity_requested * item.unit_price).toFixed(2)}
+                  </span>
+                </div>
+              )}
 
               <Input
                 label="Notes (optional)"
@@ -187,6 +240,17 @@ export default function PurchaseRequestForm() {
           ))}
         </div>
       </div>
+
+      {items.length > 0 && (
+        <div className="bg-neutral-800 border border-neutral-700 rounded-lg p-4">
+          <div className="flex justify-between items-center">
+            <span className="text-neutral-400">Total Estimated:</span>
+            <span className="text-xl font-bold text-green-400">
+              R$ {items.reduce((sum, item) => sum + (item.quantity_requested || 0) * (item.unit_price || 0), 0).toFixed(2)}
+            </span>
+          </div>
+        </div>
+      )}
 
       <Input
         label="Request Notes (optional)"
@@ -210,7 +274,7 @@ export default function PurchaseRequestForm() {
 
       <div className="flex space-x-4">
         <Button type="submit" disabled={loading || items.length === 0}>
-          {loading ? 'Creating...' : 'Create Draft'}
+          {loading ? 'Creating...' : 'Create Request'}
         </Button>
         <Button
           type="button"

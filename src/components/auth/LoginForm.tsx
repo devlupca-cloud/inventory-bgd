@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 
@@ -47,7 +48,7 @@ export default function LoginForm() {
     if (error) {
       setMessage(error.message)
     } else {
-      router.push('/inventory')
+      router.push('/')
       router.refresh()
     }
     setLoading(false)
@@ -160,6 +161,15 @@ export default function LoginForm() {
               {message}
             </div>
           )}
+
+          <div className="mt-6 text-center">
+            <p className="text-sm text-neutral-400">
+              Don't have an account?{' '}
+              <Link href="/signup" className="text-green-400 hover:text-green-300 transition-colors">
+                Sign up
+              </Link>
+            </p>
+          </div>
         </div>
 
         <p className="text-center text-sm text-neutral-500">

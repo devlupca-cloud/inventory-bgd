@@ -1,9 +1,10 @@
 import { createClient } from '@/lib/supabase/client'
 
-export async function approvePurchaseRequest(requestId: string) {
+export async function approvePurchaseRequest(requestId: string, adjustStock: boolean = false) {
   const supabase = createClient()
   const { data, error } = await supabase.rpc('rpc_approve_purchase_request', {
     p_request_id: requestId,
+    p_adjust_stock: adjustStock,
   })
   
   if (error) throw error

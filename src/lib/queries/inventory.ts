@@ -9,11 +9,13 @@ export interface SiteInventoryItem {
     id: string
     name: string
     unit: string
+    price: number
   }
   site: {
     id: string
     name: string
     address: string | null
+    is_master: boolean
   }
 }
 
@@ -52,4 +54,17 @@ export async function getLowStockAlerts(): Promise<LowStockAlert[]> {
   
   if (error) throw error
   return data || []
+}
+
+export async function getCurrentStock(siteId: string, productId: string): Promise<number> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('site_inventory')
+    .select('quantity_on_hand')
+    .eq('site_id', siteId)
+    .eq('product_id', productId)
+    .maybeSingle()
+  
+  if (error) throw error
+  return data?.quantity_on_hand || 0
 }

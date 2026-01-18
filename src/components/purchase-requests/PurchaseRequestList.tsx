@@ -20,6 +20,18 @@ export default function PurchaseRequestList({ requests }: PurchaseRequestListPro
     return variants[status] || 'default'
   }
 
+  const getStatusLabel = (status: PurchaseRequest['status']) => {
+    const labels: Record<PurchaseRequest['status'], string> = {
+      draft: 'Draft',
+      submitted: 'Awaiting Approval',
+      approved: 'Approved - Ready to Purchase',
+      rejected: 'Rejected',
+      fulfilled: 'Completed',
+      partially_fulfilled: 'Partially Completed',
+    }
+    return labels[status] || status
+  }
+
   if (requests.length === 0) {
     return (
       <div className="text-center py-12 text-neutral-500">
@@ -57,16 +69,16 @@ export default function PurchaseRequestList({ requests }: PurchaseRequestListPro
           {requests.map((request) => (
             <tr key={request.id} className="hover:bg-neutral-800/50 transition-colors">
               <td className="px-6 py-4 whitespace-nowrap">
-                <span className="text-sm font-medium text-white">{request.site.name}</span>
+                <span className="text-sm font-medium text-white">{request.site?.name || 'Unknown Site'}</span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <Badge variant={getStatusBadge(request.status)}>
-                  {request.status}
+                  {getStatusLabel(request.status)}
                 </Badge>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <span className="text-sm text-neutral-300">
-                  {request.requested_by_user.full_name || request.requested_by_user.email}
+                  {request.requested_by_user?.full_name || request.requested_by_user?.email || 'Unknown User'}
                 </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">

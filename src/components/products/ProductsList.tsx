@@ -67,6 +67,9 @@ export default function ProductsList({ products, canManage }: ProductsListProps)
             <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
               Unit
             </th>
+            <th className="px-6 py-3 text-right text-xs font-medium text-neutral-500 uppercase tracking-wider">
+              Price
+            </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
               Created
             </th>
@@ -92,6 +95,11 @@ export default function ProductsList({ products, canManage }: ProductsListProps)
               </td>
               <td className="px-6 py-4">
                 <span className="text-sm text-neutral-400 bg-neutral-800 px-2 py-1 rounded">{product.unit}</span>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-right">
+                <span className="text-sm font-medium text-green-400">
+                  R$ {(product.price || 0).toFixed(2)}
+                </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <span className="text-sm text-neutral-500">

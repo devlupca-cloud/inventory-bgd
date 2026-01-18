@@ -1,9 +1,10 @@
 import ProtectedRoute from '@/components/auth/ProtectedRoute'
-import { getPurchaseRequest, getPurchaseRequestItems } from '@/lib/queries/purchase-requests'
+import { getPurchaseRequest, getPurchaseRequestItems } from '@/lib/queries/purchase-requests.server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { hasRole } from '@/lib/utils/permissions'
 import PurchaseRequestDetail from '@/components/purchase-requests/PurchaseRequestDetail'
+import PurchaseRequestHistory from '@/components/purchase-requests/PurchaseRequestHistory'
 
 export default async function PurchaseRequestDetailPage({
   params,
@@ -35,7 +36,7 @@ async function PurchaseRequestDetailContent({
   return (
     <div className="min-h-screen bg-black">
       {/* Navigation */}
-      <nav className="bg-neutral-900 border-b border-neutral-800">
+      <nav className="bg-neutral-900 border-b border-neutral-800 lg:ml-64">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center space-x-4">
@@ -53,12 +54,16 @@ async function PurchaseRequestDetailContent({
       </nav>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <main className="lg:ml-64 max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <PurchaseRequestDetail
           request={request}
           items={items}
           isManager={isManager}
         />
+        
+        <div className="mt-6">
+          <PurchaseRequestHistory request={request} />
+        </div>
       </main>
     </div>
   )

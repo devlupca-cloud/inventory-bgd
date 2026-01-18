@@ -87,7 +87,12 @@ export default function SitesList({ sites, canManage }: SitesListProps) {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
                   </div>
-                  <span className="text-sm font-medium text-white">{site.name}</span>
+                  <Link
+                    href={`/inventory/${site.id}`}
+                    className="text-sm font-medium text-white hover:text-green-400 transition-colors"
+                  >
+                    {site.name}
+                  </Link>
                 </div>
               </td>
               <td className="px-6 py-4">
@@ -100,21 +105,13 @@ export default function SitesList({ sites, canManage }: SitesListProps) {
               </td>
               {canManage && (
                 <td className="px-6 py-4 whitespace-nowrap text-right">
-                  <div className="flex items-center justify-end space-x-2">
-                    <Link
-                      href={`/sites/${site.id}/edit`}
-                      className="px-3 py-1.5 text-xs text-neutral-400 hover:text-white hover:bg-neutral-700 rounded-lg transition-colors"
-                    >
-                      Edit
-                    </Link>
-                    <button
-                      onClick={() => handleDelete(site.id, site.name)}
-                      disabled={deleting === site.id}
-                      className="px-3 py-1.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
-                    >
-                      {deleting === site.id ? 'Deleting...' : 'Delete'}
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => handleDelete(site.id, site.name)}
+                    disabled={deleting === site.id}
+                    className="px-3 py-1.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    {deleting === site.id ? 'Deleting...' : 'Delete'}
+                  </button>
                 </td>
               )}
             </tr>

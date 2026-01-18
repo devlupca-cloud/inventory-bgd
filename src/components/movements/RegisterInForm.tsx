@@ -2,15 +2,21 @@
 import { useState, useEffect } from 'react'
 import { registerIn } from '@/lib/rpc/inventory'
 import SiteSelector from '@/components/inventory/SiteSelector'
-import { getProducts, Product } from '@/lib/queries/products'
+import { getProductsClient, Product } from '@/lib/queries/products'
 import Select from '@/components/ui/Select'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import { useRouter } from 'next/navigation'
 
-export default function RegisterInForm() {
-  const [siteId, setSiteId] = useState('')
-  const [productId, setProductId] = useState('')
+interface RegisterInFormProps {
+  initialSiteId?: string
+  initialProductId?: string
+  onClose?: () => void
+}
+
+export default function RegisterInForm({ initialSiteId = '', initialProductId = '', onClose }: RegisterInFormProps) {
+  const [siteId, setSiteId] = useState(initialSiteId)
+  const [productId, setProductId] = useState(initialProductId)
   const [quantity, setQuantity] = useState('')
   const [notes, setNotes] = useState('')
   const [products, setProducts] = useState<Product[]>([])
@@ -21,11 +27,17 @@ export default function RegisterInForm() {
 
   useEffect(() => {
     loadProducts()
-  }, [])
+    if (initialSiteId) {
+      setSiteId(initialSiteId)
+    }
+    if (initialProductId) {
+      setProductId(initialProductId)
+    }
+  }, [initialSiteId, initialProductId])
 
   const loadProducts = async () => {
     try {
-      const data = await getProducts()
+      const data = await getProductsClient()
       setProducts(data)
     } catch (err) {
       console.error('Error loading products:', err)
@@ -49,8 +61,13 @@ export default function RegisterInForm() {
       if (result.success) {
         setSuccess(true)
         setTimeout(() => {
-          router.push('/inventory')
-          router.refresh()
+          if (onClose) {
+            onClose()
+            router.refresh()
+          } else {
+            router.push('/inventory')
+            router.refresh()
+          }
         }, 1500)
       } else {
         setError(result.message || 'Failed to register stock')
@@ -64,13 +81,14 @@ export default function RegisterInForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      <SiteSelector value={siteId} onChange={setSiteId} />
+      <SiteSelector value={siteId} onChange={setSiteId} disabled={!!initialSiteId} />
       
       <Select
         label="Product"
         value={productId}
         onChange={(e) => setProductId(e.target.value)}
         required
+        disabled={!!initialProductId}
       >
         <option value="">Select a product</option>
         {products.map((product) => (
@@ -107,7 +125,7 @@ export default function RegisterInForm() {
 
       {success && (
         <div className="bg-green-500/20 border border-green-500/30 text-green-400 px-4 py-3 rounded-lg text-sm">
-          Stock registered successfully! Redirecting...
+          Stock registered successfully!{onClose ? '' : ' Redirecting...'}
         </div>
       )}
 

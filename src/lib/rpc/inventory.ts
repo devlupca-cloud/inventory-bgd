@@ -23,7 +23,7 @@ export async function registerOut(
   productId: string,
   quantity: number,
   notes?: string
-) {
+): Promise<{ success: boolean; message?: string }> {
   const supabase = createClient()
   const { data, error } = await supabase.rpc('rpc_register_out', {
     p_site_id: siteId,
@@ -32,8 +32,10 @@ export async function registerOut(
     p_notes: notes || null,
   })
   
-  if (error) throw error
-  return data
+  if (error) {
+    return { success: false, message: error.message }
+  }
+  return data || { success: false, message: 'Unknown error' }
 }
 
 export async function transferBetweenSites(
@@ -42,7 +44,7 @@ export async function transferBetweenSites(
   productId: string,
   quantity: number,
   notes?: string
-) {
+): Promise<{ success: boolean; message?: string }> {
   const supabase = createClient()
   const { data, error } = await supabase.rpc('rpc_transfer_between_sites', {
     p_from_site_id: fromSiteId,
@@ -52,6 +54,8 @@ export async function transferBetweenSites(
     p_notes: notes || null,
   })
   
-  if (error) throw error
-  return data
+  if (error) {
+    return { success: false, message: error.message }
+  }
+  return data || { success: false, message: 'Unknown error' }
 }

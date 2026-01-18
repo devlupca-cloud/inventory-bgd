@@ -15,6 +15,7 @@ interface ProductFormProps {
 export default function ProductForm({ product }: ProductFormProps) {
   const [name, setName] = useState(product?.name || '')
   const [unit, setUnit] = useState(product?.unit || '')
+  const [price, setPrice] = useState(product?.price?.toString() || '')
   const [units, setUnits] = useState<Unit[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -54,6 +55,13 @@ export default function ProductForm({ product }: ProductFormProps) {
       return
     }
 
+    const priceValue = parseFloat(price) || 0
+    if (priceValue < 0) {
+      setError('Price cannot be negative')
+      setLoading(false)
+      return
+    }
+
     try {
       if (isEditing) {
         const { error: updateError } = await supabase
@@ -61,6 +69,7 @@ export default function ProductForm({ product }: ProductFormProps) {
           .update({
             name: name.trim(),
             unit: unit.trim(),
+            price: priceValue,
           })
           .eq('id', product.id)
 
@@ -71,6 +80,7 @@ export default function ProductForm({ product }: ProductFormProps) {
           .insert({
             name: name.trim(),
             unit: unit.trim(),
+            price: priceValue,
           })
 
         if (insertError) throw insertError
@@ -112,6 +122,16 @@ export default function ProductForm({ product }: ProductFormProps) {
           </option>
         ))}
       </Select>
+
+      <Input
+        label="Price (R$)"
+        type="number"
+        step="0.01"
+        min="0"
+        value={price}
+        onChange={(e) => setPrice(e.target.value)}
+        placeholder="0.00"
+      />
 
       {error && (
         <div className="bg-red-500/20 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg text-sm">

@@ -53,23 +53,52 @@ export async function getDashboardData() {
     .limit(5)
 
   // Get pending purchase requests (submitted, waiting approval)
-  const { data: pendingRequests } = await supabase
+  const { data: pendingRequestsData } = await supabase
     .from('purchase_requests')
     .select(`
       id,
       site_id,
       status,
       created_at,
-      site:sites(name),
-      requested_by_user:user_profiles!purchase_requests_requested_by_fkey(full_name, email),
-      purchase_request_items(count)
+      requested_by,
+      site:sites(name)
     `)
     .in('status', ['submitted', 'approved'])
     .order('created_at', { ascending: false })
     .limit(5)
+  
+  // Get item counts for each request
+  const requestIds = (pendingRequestsData || []).map(r => r.id)
+  const { data: itemCounts } = requestIds.length > 0 ? await supabase
+    .from('purchase_request_items')
+    .select('purchase_request_id')
+    .in('purchase_request_id', requestIds) : { data: [] }
+  
+  // Get user profiles
+  const requestedByIds = [...new Set((pendingRequestsData || []).map(r => r.requested_by).filter(Boolean))]
+  const { data: users } = requestedByIds.length > 0 ? await supabase
+    .from('user_profiles')
+    .select('id, email, full_name')
+    .in('id', requestedByIds) : { data: [] }
+  
+  const userMap = new Map((users || []).map(u => [u.id, u]))
+  const countMap = new Map()
+  ;(itemCounts || []).forEach(item => {
+    countMap.set(item.purchase_request_id, (countMap.get(item.purchase_request_id) || 0) + 1)
+  })
+  
+  const pendingRequests = (pendingRequestsData || []).map(req => ({
+    id: req.id,
+    site_id: req.site_id,
+    status: req.status,
+    created_at: req.created_at,
+    site: req.site,
+    requested_by_user: userMap.get(req.requested_by) || { email: 'Unknown', full_name: null },
+    item_count: countMap.get(req.id) || 0
+  }))
 
   // Get recent stock movements
-  const { data: recentMovements } = await supabase
+  const { data: movementsData } = await supabase
     .from('stock_movements')
     .select(`
       id,
@@ -78,12 +107,33 @@ export async function getDashboardData() {
       movement_type,
       quantity,
       created_at,
+      created_by,
       site:sites(name),
-      product:products(name),
-      created_by_user:user_profiles!stock_movements_created_by_fkey(email)
+      product:products(name)
     `)
     .order('created_at', { ascending: false })
     .limit(10)
+  
+  // Get user profiles for movements
+  const createdByIds = [...new Set((movementsData || []).map(m => m.created_by).filter(Boolean))]
+  const { data: movementUsers } = createdByIds.length > 0 ? await supabase
+    .from('user_profiles')
+    .select('id, email')
+    .in('id', createdByIds) : { data: [] }
+  
+  const movementUserMap = new Map((movementUsers || []).map(u => [u.id, u]))
+  
+  const recentMovements = (movementsData || []).map(mov => ({
+    id: mov.id,
+    site_id: mov.site_id,
+    product_id: mov.product_id,
+    movement_type: mov.movement_type,
+    quantity: mov.quantity,
+    created_at: mov.created_at,
+    site: mov.site,
+    product: mov.product,
+    created_by_email: movementUserMap.get(mov.created_by)?.email || null
+  }))
 
   // Get site summaries
   const { data: sites } = await supabase
@@ -124,28 +174,28 @@ export async function getDashboardData() {
   })
 
   // Format pending requests
-  const formattedPendingRequests: PendingRequest[] = (pendingRequests || []).map((req: Record<string, unknown>) => ({
-    id: req.id as string,
-    site_id: req.site_id as string,
-    site_name: (req.site as { name: string })?.name || 'Unknown',
-    status: req.status as string,
-    requested_by_name: (req.requested_by_user as { full_name: string | null })?.full_name || null,
-    requested_by_email: (req.requested_by_user as { email: string })?.email || 'Unknown',
-    created_at: req.created_at as string,
-    item_count: Array.isArray(req.purchase_request_items) ? req.purchase_request_items.length : 0
+  const formattedPendingRequests: PendingRequest[] = pendingRequests.map(req => ({
+    id: req.id,
+    site_id: req.site_id,
+    site_name: req.site?.name || 'Unknown',
+    status: req.status,
+    requested_by_name: req.requested_by_user?.full_name || null,
+    requested_by_email: req.requested_by_user?.email || 'Unknown',
+    created_at: req.created_at,
+    item_count: req.item_count
   }))
 
   // Format recent movements
-  const formattedMovements: RecentMovement[] = (recentMovements || []).map((mov: Record<string, unknown>) => ({
-    id: mov.id as string,
-    site_id: mov.site_id as string,
-    site_name: (mov.site as { name: string })?.name || 'Unknown',
-    product_id: mov.product_id as string,
-    product_name: (mov.product as { name: string })?.name || 'Unknown',
-    movement_type: mov.movement_type as 'IN' | 'OUT' | 'TRANSFER_IN' | 'TRANSFER_OUT',
-    quantity: mov.quantity as number,
-    created_at: mov.created_at as string,
-    created_by_email: (mov.created_by_user as { email: string })?.email || null
+  const formattedMovements: RecentMovement[] = recentMovements.map(mov => ({
+    id: mov.id,
+    site_id: mov.site_id,
+    site_name: mov.site?.name || 'Unknown',
+    product_id: mov.product_id,
+    product_name: mov.product?.name || 'Unknown',
+    movement_type: mov.movement_type,
+    quantity: mov.quantity,
+    created_at: mov.created_at,
+    created_by_email: mov.created_by_email
   }))
 
   return {

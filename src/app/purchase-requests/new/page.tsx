@@ -2,19 +2,29 @@ import ProtectedRoute from '@/components/auth/ProtectedRoute'
 import PurchaseRequestForm from '@/components/purchase-requests/PurchaseRequestForm'
 import Link from 'next/link'
 
-export default async function NewPurchaseRequestPage() {
+export default async function NewPurchaseRequestPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ siteId?: string }>
+}) {
   return (
     <ProtectedRoute>
-      <NewPurchaseRequestContent />
+      <NewPurchaseRequestContent searchParams={searchParams} />
     </ProtectedRoute>
   )
 }
 
-async function NewPurchaseRequestContent() {
+async function NewPurchaseRequestContent({
+  searchParams,
+}: {
+  searchParams: Promise<{ siteId?: string }>
+}) {
+  const params = await searchParams
+  const siteId = params.siteId || ''
   return (
     <div className="min-h-screen bg-black">
       {/* Navigation */}
-      <nav className="bg-neutral-900 border-b border-neutral-800">
+      <nav className="bg-neutral-900 border-b border-neutral-800 lg:ml-64">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center space-x-4">
@@ -32,9 +42,9 @@ async function NewPurchaseRequestContent() {
       </nav>
 
       {/* Main Content */}
-      <main className="max-w-3xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <main className="lg:ml-64 max-w-3xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">
-          <PurchaseRequestForm />
+          <PurchaseRequestForm initialSiteId={siteId} />
         </div>
       </main>
     </div>

@@ -13,6 +13,8 @@ interface SiteFormProps {
 export default function SiteForm({ site }: SiteFormProps) {
   const [name, setName] = useState(site?.name || '')
   const [address, setAddress] = useState(site?.address || '')
+  const [supervisorName, setSupervisorName] = useState(site?.supervisor_name || '')
+  const [supervisorPhone, setSupervisorPhone] = useState(site?.supervisor_phone || '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
@@ -39,6 +41,8 @@ export default function SiteForm({ site }: SiteFormProps) {
           .update({
             name: name.trim(),
             address: address.trim() || null,
+            supervisor_name: supervisorName.trim() || null,
+            supervisor_phone: supervisorPhone.trim() || null,
           })
           .eq('id', site.id)
 
@@ -49,6 +53,8 @@ export default function SiteForm({ site }: SiteFormProps) {
           .insert({
             name: name.trim(),
             address: address.trim() || null,
+            supervisor_name: supervisorName.trim() || null,
+            supervisor_phone: supervisorPhone.trim() || null,
           })
 
         if (insertError) throw insertError
@@ -84,6 +90,27 @@ export default function SiteForm({ site }: SiteFormProps) {
         onChange={(e) => setAddress(e.target.value)}
         placeholder="e.g., 123 Main St, City, State 12345"
       />
+
+      <div className="border-t border-neutral-800 pt-5">
+        <h3 className="text-sm font-medium text-neutral-300 mb-4">Supervisor Information</h3>
+        <div className="space-y-4">
+          <Input
+            label="Supervisor Name (optional)"
+            type="text"
+            value={supervisorName}
+            onChange={(e) => setSupervisorName(e.target.value)}
+            placeholder="e.g., João Silva"
+          />
+
+          <Input
+            label="Supervisor Phone (optional)"
+            type="tel"
+            value={supervisorPhone}
+            onChange={(e) => setSupervisorPhone(e.target.value)}
+            placeholder="e.g., +5511999999999"
+          />
+        </div>
+      </div>
 
       {error && (
         <div className="bg-red-500/20 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg text-sm">

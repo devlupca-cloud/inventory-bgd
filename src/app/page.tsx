@@ -2,7 +2,8 @@ import { redirect } from 'next/navigation'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { getDashboardData } from '@/lib/queries/dashboard.server'
 import Link from 'next/link'
-import LogoutButton from '@/components/ui/LogoutButton'
+import AppHeaderWrapper from '@/components/layout/AppHeaderWrapper'
+import QuickActions from '@/components/dashboard/QuickActions'
 
 export default async function DashboardPage() {
   const supabase = await createServerSupabaseClient()
@@ -16,79 +17,24 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-black">
-      {/* Navigation */}
-      <nav className="bg-neutral-900 border-b border-neutral-800 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center mr-3">
-                <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                </svg>
-              </div>
-              <h1 className="text-xl font-bold text-white">BGD Inventory</h1>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="px-3 py-1.5 text-xs text-neutral-500 bg-neutral-800 rounded-full hidden sm:block">
-                {user.email}
-              </span>
-              <LogoutButton />
-            </div>
-          </div>
-        </div>
-      </nav>
+      <AppHeaderWrapper variant="full" sticky />
 
-      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+      <main className="lg:ml-64 max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         {/* Quick Actions */}
         <section className="mb-8">
           <h2 className="text-lg font-semibold text-white mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <Link
-              href="/movements/in"
-              className="flex flex-col items-center justify-center p-4 bg-green-500/10 border border-green-500/30 rounded-xl hover:bg-green-500/20 hover:border-green-500/50 transition-all group"
-            >
-              <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center mb-2 group-hover:bg-green-500/30 transition-colors">
-                <svg className="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-              </div>
-              <span className="text-sm font-medium text-green-500">Stock IN</span>
-            </Link>
-
-            <Link
-              href="/movements/out"
-              className="flex flex-col items-center justify-center p-4 bg-red-500/10 border border-red-500/30 rounded-xl hover:bg-red-500/20 hover:border-red-500/50 transition-all group"
-            >
-              <div className="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center mb-2 group-hover:bg-red-500/30 transition-colors">
-                <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                </svg>
-              </div>
-              <span className="text-sm font-medium text-red-500">Stock OUT</span>
-            </Link>
-
-            <Link
-              href="/movements/transfer"
-              className="flex flex-col items-center justify-center p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl hover:bg-blue-500/20 hover:border-blue-500/50 transition-all group"
-            >
-              <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center mb-2 group-hover:bg-blue-500/30 transition-colors">
-                <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                </svg>
-              </div>
-              <span className="text-sm font-medium text-blue-500">Transfer</span>
-            </Link>
-
+          <QuickActions />
+          <div className="mt-3">
             <Link
               href="/purchase-requests/new"
-              className="flex flex-col items-center justify-center p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl hover:bg-amber-500/20 hover:border-amber-500/50 transition-all group"
+              className="inline-flex items-center justify-center p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl hover:bg-amber-500/20 hover:border-amber-500/50 transition-all group"
             >
-              <div className="w-12 h-12 bg-amber-500/20 rounded-xl flex items-center justify-center mb-2 group-hover:bg-amber-500/30 transition-colors">
+              <div className="w-12 h-12 bg-amber-500/20 rounded-xl flex items-center justify-center mr-3 group-hover:bg-amber-500/30 transition-colors">
                 <svg className="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
-              <span className="text-sm font-medium text-amber-500">New Request</span>
+              <span className="text-sm font-medium text-amber-500">New Purchase Request</span>
             </Link>
           </div>
         </section>
@@ -104,14 +50,13 @@ export default async function DashboardPage() {
                   {dashboard.lowStockAlerts.length}
                 </span>
               </div>
-              <Link href="/alerts" className="text-sm text-green-500 hover:text-green-400 transition-colors">
-                View all →
-              </Link>
             </div>
             <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
               <div className="divide-y divide-neutral-800">
-                {dashboard.lowStockAlerts.map((alert) => (
-                  <div key={`${alert.site_id}-${alert.product_id}`} className="p-4 flex items-center justify-between hover:bg-neutral-800/50 transition-colors">
+                {dashboard.lowStockAlerts
+                  .filter((alert) => alert.site_id && alert.product_id)
+                  .map((alert, index) => (
+                  <div key={`alert-${alert.site_id || 'unknown'}-${alert.product_id || 'unknown'}-${index}`} className="p-4 flex items-center justify-between hover:bg-neutral-800/50 transition-colors">
                     <div className="flex items-center space-x-4">
                       <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center">
                         <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
