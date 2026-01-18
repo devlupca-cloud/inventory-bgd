@@ -25,7 +25,8 @@ export default async function ProtectedRoute({
       .eq('id', user.id)
       .single()
 
-    if (!profile || !requiredRoles.includes(profile.role as any)) {
+    const userRole = profile?.role as 'viewer' | 'supervisor' | 'manager' | 'owner' | undefined
+    if (!profile || !userRole || !requiredRoles.includes(userRole)) {
       redirect('/') // Redirect to dashboard if insufficient permissions
     }
   }

@@ -14,8 +14,8 @@ export default async function PurchaseRequestsPage() {
 }
 
 async function PurchaseRequestsContent() {
-  let requests = []
-  let error = null
+  let requests: Awaited<ReturnType<typeof getPurchaseRequests>> = []
+  let error: string | null = null
   
   try {
     requests = await getPurchaseRequests()
