@@ -4,11 +4,15 @@ export interface SiteInventoryItem {
   site_id: string
   product_id: string
   quantity_on_hand: number
+  quantity_packages: number
+  quantity_loose_units: number
   last_updated: string
   product: {
     id: string
     name: string
     unit: string
+    base_unit: string
+    units_per_package: number
     price: number
   }
   site: {

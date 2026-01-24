@@ -7,11 +7,19 @@ export async function registerIn(
   notes?: string
 ): Promise<{ success: boolean; message?: string }> {
   const supabase = createClient()
+  
+  // Get current user
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return { success: false, message: 'User not authenticated' }
+  }
+  
   // @ts-expect-error - Supabase RPC type inference issue
   const { data, error } = await supabase.rpc('rpc_register_in', {
     p_site_id: siteId,
     p_product_id: productId,
     p_quantity: quantity,
+    p_user_id: user.id,
     p_notes: notes || null,
   })
   
@@ -28,11 +36,19 @@ export async function registerOut(
   notes?: string
 ): Promise<{ success: boolean; message?: string }> {
   const supabase = createClient()
+  
+  // Get current user
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return { success: false, message: 'User not authenticated' }
+  }
+  
   // @ts-expect-error - Supabase RPC type inference issue
   const { data, error } = await supabase.rpc('rpc_register_out', {
     p_site_id: siteId,
     p_product_id: productId,
     p_quantity: quantity,
+    p_user_id: user.id,
     p_notes: notes || null,
   })
   
@@ -50,12 +66,20 @@ export async function transferBetweenSites(
   notes?: string
 ): Promise<{ success: boolean; message?: string }> {
   const supabase = createClient()
+  
+  // Get current user
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return { success: false, message: 'User not authenticated' }
+  }
+  
   // @ts-expect-error - Supabase RPC type inference issue
   const { data, error } = await supabase.rpc('rpc_transfer_between_sites', {
     p_from_site_id: fromSiteId,
     p_to_site_id: toSiteId,
     p_product_id: productId,
     p_quantity: quantity,
+    p_user_id: user.id,
     p_notes: notes || null,
   })
   

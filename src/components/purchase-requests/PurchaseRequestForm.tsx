@@ -47,7 +47,7 @@ export default function PurchaseRequestForm({}: PurchaseRequestFormProps) {
         .from('user_profiles')
         .select('role')
         .eq('id', user.id)
-        .single()
+        .single() as { data: { role: string } | null }
       
       if (profile) {
         setUserRole(profile.role)
@@ -58,7 +58,7 @@ export default function PurchaseRequestForm({}: PurchaseRequestFormProps) {
             .from('site_user_roles')
             .select('site_id')
             .eq('user_id', user.id)
-            .single()
+            .single() as { data: { site_id: string } | null }
           
           if (siteRole) {
             setUserSiteId(siteRole.site_id)

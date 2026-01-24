@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       .from('user_profiles')
       .select('role')
       .eq('id', user.id)
-      .single()
+      .single() as { data: { role: string } | null }
     
     if (!profile || !['manager', 'owner'].includes(profile.role)) {
       return NextResponse.json(
@@ -36,6 +36,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, message: 'Missing required fields' },
         { status: 400 }
+      )
+    }
+    
+    // Get product info
+    const { data: selectedProduct } = await supabase
+      .from('products')
+      .select('name, unit')
+      .eq('id', product_id)
+      .single()
+    
+    if (!selectedProduct) {
+      return NextResponse.json(
+        { success: false, message: 'Product not found' },
+        { status: 404 }
       )
     }
     
@@ -61,7 +75,7 @@ export async function POST(request: NextRequest) {
         purchased_at: new Date().toISOString(),
       })
       .select()
-      .single()
+      .single() as { data: { id: string } | null; error: any }
     
     if (purchaseError) {
       return NextResponse.json(
@@ -70,27 +84,35 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Add items to master warehouse inventory via stock movement
-    const { error: movementError } = await supabase
-      .from('stock_movements')
-      // @ts-expect-error - Supabase type inference issue
-      .insert({
-        site_id: masterSite.id,
-        product_id,
-        movement_type: 'IN',
-        quantity: quantity,
-        notes: `Direct purchase (ID: ${purchase.id.substring(0, 8)}) - R$ ${unit_price.toFixed(2)}/unit`,
-      })
-    
-    if (movementError) {
-      // Rollback: delete the purchase record
-      await supabase
-        .from('direct_purchases')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', purchase.id)
-      
+    if (!purchase) {
       return NextResponse.json(
-        { success: false, message: `Failed to add to inventory: ${movementError.message}` },
+        { success: false, message: 'Failed to create purchase' },
+        { status: 500 }
+      )
+    }
+    
+    // Add items to master warehouse inventory using RPC (handles packages correctly)
+    const purchaseNotes = `Direct purchase (ID: ${purchase.id.substring(0, 8)}) - R$ ${unit_price.toFixed(2)}/${selectedProduct?.unit || 'unit'}`
+    
+    // @ts-expect-error - Supabase RPC type inference issue
+    const { data: registerResult, error: registerError } = await supabase.rpc('rpc_register_in', {
+      p_site_id: masterSite.id,
+      p_product_id: product_id,
+      p_quantity: quantity, // This is in purchase units (packages/boxes)
+      p_user_id: user.id,
+      p_notes: purchaseNotes,
+    })
+    
+    if (registerError) {
+      return NextResponse.json(
+        { success: false, message: `Failed to add to inventory: ${registerError.message}` },
+        { status: 500 }
+      )
+    }
+    
+    if (!registerResult || !registerResult.success) {
+      return NextResponse.json(
+        { success: false, message: registerResult?.message || 'Failed to add to inventory' },
         { status: 500 }
       )
     }

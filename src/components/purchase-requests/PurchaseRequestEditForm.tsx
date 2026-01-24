@@ -70,7 +70,7 @@ export default function PurchaseRequestEditForm({ request, items: initialItems }
         .from('user_profiles')
         .select('role')
         .eq('id', user.id)
-        .single()
+        .single() as { data: { role: string } | null }
       
       if (profile) {
         setUserRole(profile.role)
@@ -80,7 +80,7 @@ export default function PurchaseRequestEditForm({ request, items: initialItems }
             .from('site_user_roles')
             .select('site_id')
             .eq('user_id', user.id)
-            .single()
+            .single() as { data: { site_id: string } | null }
           
           if (siteRole) {
             setUserSiteId(siteRole.site_id)
@@ -341,7 +341,7 @@ export default function PurchaseRequestEditForm({ request, items: initialItems }
                 <div className="md:col-span-2">
                   <div className="relative">
                     <Select
-                      label={<span>Target Site <span className="text-blue-400 text-xs ml-1">→ Where will this go?</span></span>}
+                      label="Target Site → Where will this go?"
                       value={item.target_site_id || ''}
                       onChange={(e) => updateItem(index, 'target_site_id', e.target.value)}
                     >

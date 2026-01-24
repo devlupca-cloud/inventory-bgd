@@ -81,18 +81,24 @@ export interface Database {
           site_id: string
           product_id: string
           quantity_on_hand: number
+          quantity_packages: number
+          quantity_loose_units: number
           last_updated: string
         }
         Insert: {
           site_id: string
           product_id: string
           quantity_on_hand?: number
+          quantity_packages?: number
+          quantity_loose_units?: number
           last_updated?: string
         }
         Update: {
           site_id?: string
           product_id?: string
           quantity_on_hand?: number
+          quantity_packages?: number
+          quantity_loose_units?: number
           last_updated?: string
         }
       }

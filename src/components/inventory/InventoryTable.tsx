@@ -54,12 +54,31 @@ export default function InventoryTable({ items, onProductClick }: InventoryTable
                 <span className="text-sm font-medium text-white">{item.product.name}</span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right">
-                <span className={`text-sm font-semibold ${item.quantity_on_hand > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {item.quantity_on_hand.toLocaleString()}
-                </span>
+                <div className="flex flex-col items-end">
+                  <span className={`text-sm font-semibold ${item.quantity_on_hand > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {item.quantity_on_hand.toLocaleString()} {item.product.base_unit || item.product.unit}
+                  </span>
+                  {item.product.units_per_package > 1 && (
+                    <div className="text-xs text-neutral-500 mt-0.5 space-y-0.5">
+                      {item.quantity_packages > 0 && (
+                        <div>
+                          {item.quantity_packages} {item.product.unit}(s) fechada(s)
+                        </div>
+                      )}
+                      {item.quantity_loose_units > 0 && (
+                        <div>
+                          {item.quantity_loose_units.toLocaleString()} {item.product.base_unit}(s) solta(s)
+                        </div>
+                      )}
+                      {item.quantity_packages === 0 && item.quantity_loose_units === 0 && item.quantity_on_hand === 0 && (
+                        <div className="text-red-400">Sem estoque</div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <span className="text-sm text-neutral-400">{item.product.unit}</span>
+                <span className="text-sm text-neutral-400">{item.product.base_unit || item.product.unit}</span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right">
                 <span className="text-sm text-neutral-400">
