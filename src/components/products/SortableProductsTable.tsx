@@ -85,16 +85,24 @@ export default function SortableProductsTable({ products, canManage, totalProduc
 
     setDeleting(productId)
     try {
-      const { error } = await supabase
-        .from('products')
-        // @ts-expect-error - Supabase type inference issue
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', productId)
+      // Use RPC function for soft delete (bypasses RLS issues)
+      const { data, error } = await supabase.rpc('rpc_delete_product', {
+        p_product_id: productId
+      })
 
-      if (error) throw error
+      if (error) {
+        console.error('Delete error:', error)
+        throw new Error(error.message || 'Failed to delete product')
+      }
+
+      if (!data || !data.success) {
+        throw new Error(data?.message || 'Failed to delete product')
+      }
+      
       router.refresh()
     } catch (err: any) {
-      alert(err.message || 'Failed to delete product')
+      console.error('Delete failed:', err)
+      alert(err.message || 'Failed to delete product. Make sure you have manager/owner permissions.')
     } finally {
       setDeleting(null)
     }
