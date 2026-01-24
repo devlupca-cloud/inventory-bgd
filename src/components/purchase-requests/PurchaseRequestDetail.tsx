@@ -145,14 +145,6 @@ export default function PurchaseRequestDetail({
     }
   }
 
-  // Debug info (remove in production)
-  console.log('PurchaseRequestDetail Debug:', {
-    requestStatus: request.status,
-    isManager,
-    canApprove: isManager && request.status === 'submitted',
-    itemsCount: items.length,
-  })
-
   return (
     <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
       {/* Header */}
@@ -174,12 +166,6 @@ export default function PurchaseRequestDetail({
               {request.status === 'rejected' && 'Rejected by manager'}
               {(request.status === 'fulfilled' || request.status === 'partially_fulfilled') && 'Purchase completed'}
             </p>
-            {/* Debug info - remove in production */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="mt-2 text-xs text-neutral-600">
-                Debug: Status={request.status}, isManager={isManager ? 'true' : 'false'}
-              </div>
-            )}
           </div>
           <Badge variant={getStatusBadge(request.status)}>
             {request.status.replace('_', ' ')}

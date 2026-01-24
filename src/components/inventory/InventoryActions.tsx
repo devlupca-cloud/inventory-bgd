@@ -17,11 +17,11 @@ export default function InventoryActions({ siteId, productId, canManage, isMaste
   return (
     <>
       <div className="flex items-center justify-end space-x-2">
-        {canManage && (
+        {canManage && !isMaster && (
           <button
             onClick={() => setTransferOpen(true)}
             className="px-2 py-1 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded transition-colors"
-            title="Transfer"
+            title="Send to Site"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
@@ -40,7 +40,7 @@ export default function InventoryActions({ siteId, productId, canManage, isMaste
         </Link>
       </div>
 
-      <TransferModal isOpen={transferOpen} onClose={() => setTransferOpen(false)} initialFromSiteId={siteId} initialProductId={productId} />
+      <TransferModal isOpen={transferOpen} onClose={() => setTransferOpen(false)} initialToSiteId={siteId} initialProductId={productId} />
     </>
   )
 }

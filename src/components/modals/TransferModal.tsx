@@ -5,15 +5,15 @@ import TransferForm from '@/components/movements/TransferForm'
 interface TransferModalProps {
   isOpen: boolean
   onClose: () => void
-  initialFromSiteId?: string
+  initialToSiteId?: string
   initialProductId?: string
 }
 
-export default function TransferModal({ isOpen, onClose, initialFromSiteId, initialProductId }: TransferModalProps) {
+export default function TransferModal({ isOpen, onClose, initialToSiteId, initialProductId }: TransferModalProps) {
   return (
-    <Dialog isOpen={isOpen} onClose={onClose} title="Transfer Stock" size="lg">
+    <Dialog isOpen={isOpen} onClose={onClose} title="Send to Site" size="lg">
       <TransferForm 
-        initialFromSiteId={initialFromSiteId} 
+        initialToSiteId={initialToSiteId} 
         initialProductId={initialProductId}
         onClose={onClose}
       />

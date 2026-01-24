@@ -40,6 +40,7 @@ export interface PurchaseRequestItem {
     id: string
     name: string
     unit: string
+    price: number | null
   }
   target_site?: {
     id: string
@@ -90,5 +91,5 @@ export async function getPurchaseRequestItems(requestId: string): Promise<Purcha
     .order('id')
   
   if (error) throw error
-  return data || []
+  return (data || []).filter((item: any) => !item.notes || !String(item.notes).startsWith('__REMOVED__'))
 }

@@ -1,28 +1,29 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { transferBetweenSites } from '@/lib/rpc/inventory'
-import SiteSelector from '@/components/inventory/SiteSelector'
-import MasterSiteSelector from '@/components/inventory/MasterSiteSelector'
 import { getProductsClient, Product } from '@/lib/queries/products'
 import { getCurrentStock } from '@/lib/queries/inventory'
+import { getMasterSite, getSites } from '@/lib/queries/sites'
 import Select from '@/components/ui/Select'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import { useRouter } from 'next/navigation'
 
 interface TransferFormProps {
-  initialFromSiteId?: string
+  initialToSiteId?: string
   initialProductId?: string
   onClose?: () => void
 }
 
-export default function TransferForm({ initialFromSiteId = '', initialProductId = '', onClose }: TransferFormProps) {
-  const [fromSiteId, setFromSiteId] = useState(initialFromSiteId)
-  const [toSiteId, setToSiteId] = useState('')
+export default function TransferForm({ initialToSiteId = '', initialProductId = '', onClose }: TransferFormProps) {
+  const [masterSiteId, setMasterSiteId] = useState<string>('')
+  const [masterSiteName, setMasterSiteName] = useState<string>('Master Warehouse')
+  const [toSiteId, setToSiteId] = useState(initialToSiteId)
   const [productId, setProductId] = useState(initialProductId)
   const [quantity, setQuantity] = useState('')
   const [notes, setNotes] = useState('')
   const [products, setProducts] = useState<Product[]>([])
+  const [destinationSites, setDestinationSites] = useState<Array<{ id: string; name: string }>>([])
   const [currentStock, setCurrentStock] = useState<number | null>(null)
   const [loadingStock, setLoadingStock] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -32,21 +33,18 @@ export default function TransferForm({ initialFromSiteId = '', initialProductId 
 
   useEffect(() => {
     loadProducts()
-    if (initialFromSiteId) {
-      setFromSiteId(initialFromSiteId)
-    }
-    if (initialProductId) {
-      setProductId(initialProductId)
-    }
-  }, [initialFromSiteId, initialProductId])
+    loadMasterAndSites()
+    if (initialToSiteId) setToSiteId(initialToSiteId)
+    if (initialProductId) setProductId(initialProductId)
+  }, [initialToSiteId, initialProductId])
 
   useEffect(() => {
-    if (fromSiteId && productId) {
+    if (masterSiteId && productId) {
       loadCurrentStock()
     } else {
       setCurrentStock(null)
     }
-  }, [fromSiteId, productId])
+  }, [masterSiteId, productId])
 
   const loadProducts = async () => {
     try {
@@ -57,11 +55,24 @@ export default function TransferForm({ initialFromSiteId = '', initialProductId 
     }
   }
 
+  const loadMasterAndSites = async () => {
+    try {
+      const [master, sites] = await Promise.all([getMasterSite(), getSites()])
+      if (master?.id) {
+        setMasterSiteId(master.id)
+        setMasterSiteName(master.name || 'Master Warehouse')
+      }
+      setDestinationSites(sites.filter(s => !s.is_master).map(s => ({ id: s.id, name: s.name })))
+    } catch (err) {
+      console.error('Error loading sites:', err)
+    }
+  }
+
   const loadCurrentStock = async () => {
-    if (!fromSiteId || !productId) return
+    if (!masterSiteId || !productId) return
     setLoadingStock(true)
     try {
-      const stock = await getCurrentStock(fromSiteId, productId)
+      const stock = await getCurrentStock(masterSiteId, productId)
       setCurrentStock(stock)
     } catch (err) {
       console.error('Error loading current stock:', err)
@@ -77,8 +88,8 @@ export default function TransferForm({ initialFromSiteId = '', initialProductId 
     setError('')
     setSuccess(false)
 
-    if (fromSiteId === toSiteId) {
-      setError('Source and destination sites must be different')
+    if (!masterSiteId) {
+      setError('Master warehouse not found')
       setLoading(false)
       return
     }
@@ -92,14 +103,14 @@ export default function TransferForm({ initialFromSiteId = '', initialProductId 
 
     // Validate stock availability at source site
     if (currentStock !== null && quantityValue > currentStock) {
-      setError(`Insufficient stock at source site. Available: ${currentStock.toLocaleString()}, Requested: ${quantityValue.toLocaleString()}`)
+      setError(`Insufficient stock at Master. Available: ${currentStock.toLocaleString()}, Requested: ${quantityValue.toLocaleString()}`)
       setLoading(false)
       return
     }
 
     try {
       const result = await transferBetweenSites(
-        fromSiteId,
+        masterSiteId,
         toSiteId,
         productId,
         parseFloat(quantity),
@@ -113,12 +124,12 @@ export default function TransferForm({ initialFromSiteId = '', initialProductId 
             onClose()
             router.refresh()
           } else {
-            router.push('/inventory')
+            router.push('/inventory/master')
             router.refresh()
           }
         }, 1500)
       } else {
-        setError(result.message || 'Failed to transfer stock')
+        setError(result.message || 'Failed to send stock')
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred')
@@ -129,19 +140,30 @@ export default function TransferForm({ initialFromSiteId = '', initialProductId 
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      <MasterSiteSelector
-        label="From Site"
-        value={fromSiteId}
-        onChange={setFromSiteId}
-        disabled={!!initialFromSiteId}
-        includeMaster={true}
-      />
+      <div className="bg-neutral-800/40 border border-neutral-700 rounded-lg px-4 py-3">
+        <p className="text-sm text-neutral-400">
+          <span className="text-neutral-500">From:</span>{' '}
+          <span className="text-white font-medium">{masterSiteName}</span>{' '}
+          <span className="text-xs text-neutral-500">(Master)</span>
+        </p>
+        <p className="text-xs text-neutral-500 mt-1">
+          This action sends items from the Master Warehouse to a site (no site-to-site transfers).
+        </p>
+      </div>
       
-      <SiteSelector
+      <Select
         label="To Site"
         value={toSiteId}
-        onChange={setToSiteId}
-      />
+        onChange={(e) => setToSiteId(e.target.value)}
+        required
+      >
+        <option value="">Select a site</option>
+        {destinationSites.map((site) => (
+          <option key={site.id} value={site.id}>
+            {site.name}
+          </option>
+        ))}
+      </Select>
 
       <Select
         label="Product"
@@ -172,7 +194,7 @@ export default function TransferForm({ initialFromSiteId = '', initialProductId 
         />
         {currentStock !== null && (
           <p className="mt-1.5 text-sm text-neutral-400">
-            Available at source site: <span className={`font-medium ${currentStock > 0 ? 'text-green-400' : 'text-red-400'}`}>
+            Available at Master: <span className={`font-medium ${currentStock > 0 ? 'text-green-400' : 'text-red-400'}`}>
               {currentStock.toLocaleString()}
             </span>
           </p>
@@ -203,12 +225,12 @@ export default function TransferForm({ initialFromSiteId = '', initialProductId 
 
       {success && (
         <div className="bg-green-500/20 border border-green-500/30 text-green-400 px-4 py-3 rounded-lg text-sm">
-          Transfer completed successfully!{onClose ? '' : ' Redirecting...'}
+          Sent successfully!{onClose ? '' : ' Redirecting...'}
         </div>
       )}
 
-      <Button type="submit" disabled={loading || !fromSiteId || !toSiteId || !productId || !quantity} className="w-full">
-        {loading ? 'Transferring...' : 'Transfer Stock'}
+      <Button type="submit" disabled={loading || !masterSiteId || !toSiteId || !productId || !quantity} className="w-full">
+        {loading ? 'Sending...' : 'Send to Site'}
       </Button>
     </form>
   )

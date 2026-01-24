@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getProductsClient, Product } from '@/lib/queries/products'
 import { getSites } from '@/lib/queries/sites'
@@ -23,6 +23,8 @@ interface EditItem {
   notes?: string
 }
 
+const REMOVED_NOTE_PREFIX = '__REMOVED__'
+
 export default function PurchaseRequestEditForm({ request, items: initialItems }: PurchaseRequestEditFormProps) {
   const [items, setItems] = useState<EditItem[]>([])
   const [products, setProducts] = useState<Product[]>([])
@@ -35,12 +37,14 @@ export default function PurchaseRequestEditForm({ request, items: initialItems }
   const [userRole, setUserRole] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
+  const initialItemIdsRef = useRef<string[]>([])
 
   useEffect(() => {
     loadProducts()
     loadSites()
     loadUserSite()
     // Load existing items
+    initialItemIdsRef.current = initialItems.map(i => i.id)
     setItems(initialItems.map(item => ({
       id: item.id,
       product_id: item.product_id,
@@ -50,6 +54,12 @@ export default function PurchaseRequestEditForm({ request, items: initialItems }
       notes: item.notes || '',
     })))
   }, [])
+
+  const removedItemIds = useMemo(() => {
+    const initialIds = new Set(initialItemIdsRef.current.filter(Boolean))
+    const currentIds = new Set(items.map(i => i.id).filter(Boolean))
+    return [...initialIds].filter(id => !currentIds.has(id))
+  }, [items])
 
   const loadUserSite = async () => {
     try {
@@ -109,7 +119,7 @@ export default function PurchaseRequestEditForm({ request, items: initialItems }
     setItems([...items, { 
       id: '', // empty id means new item
       product_id: '', 
-      quantity_requested: 0, 
+      quantity_requested: 1, 
       unit_price: 0, 
       target_site_id: defaultTargetSite 
     }])
@@ -146,6 +156,21 @@ export default function PurchaseRequestEditForm({ request, items: initialItems }
       return
     }
 
+    // Validate items (quantity_requested must be > 0 due to DB constraint)
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]
+      if (!item.product_id) {
+        setError(`Item #${i + 1}: Please select a product`)
+        setLoading(false)
+        return
+      }
+      if (!item.quantity_requested || item.quantity_requested <= 0) {
+        setError(`Item #${i + 1}: Quantity must be greater than 0`)
+        setLoading(false)
+        return
+      }
+    }
+
     try {
       // Update purchase request notes
       const { error: requestError } = await supabase
@@ -156,31 +181,78 @@ export default function PurchaseRequestEditForm({ request, items: initialItems }
 
       if (requestError) throw requestError
 
-      // Delete old items and insert new ones
-      // First, delete all existing items
-      const { error: deleteError } = await supabase
-        .from('purchase_request_items')
-        .delete()
-        .eq('purchase_request_id', request.id)
+      // IMPORTANT:
+      // Some setups with RLS will silently prevent DELETEs (0 rows deleted, no error).
+      // If we "delete all then insert", this causes duplicates.
+      // Instead we:
+      // - UPDATE existing items (by id)
+      // - INSERT only new items (id === '')
+      // - DELETE only removed items (best-effort)
 
-      if (deleteError) throw deleteError
+      const existingItems = items.filter(i => !!i.id)
+      const newItems = items.filter(i => !i.id)
 
-      // Insert all items (both existing and new)
-      const itemsToInsert = items.map(item => ({
-        purchase_request_id: request.id,
-        product_id: item.product_id,
-        quantity_requested: item.quantity_requested,
-        unit_price: item.unit_price || 0,
-        target_site_id: item.target_site_id || null,
-        notes: item.notes || null,
-      }))
+      // Update existing items
+      for (const item of existingItems) {
+        const { error: updateError } = await supabase
+          .from('purchase_request_items')
+          // @ts-expect-error - Supabase type inference issue
+          .update({
+            product_id: item.product_id,
+            quantity_requested: item.quantity_requested,
+            unit_price: item.unit_price || 0,
+            target_site_id: item.target_site_id || null,
+            notes: item.notes || null,
+          })
+          .eq('id', item.id)
 
-      const { error: itemsError } = await supabase
-        .from('purchase_request_items')
-        // @ts-expect-error - Supabase type inference issue
-        .insert(itemsToInsert)
+        if (updateError) throw updateError
+      }
 
-      if (itemsError) throw itemsError
+      // Insert new items
+      if (newItems.length > 0) {
+        const itemsToInsert = newItems.map(item => ({
+          purchase_request_id: request.id,
+          product_id: item.product_id,
+          quantity_requested: item.quantity_requested,
+          unit_price: item.unit_price || 0,
+          target_site_id: item.target_site_id || null,
+          notes: item.notes || null,
+        }))
+
+        const { error: insertError } = await supabase
+          .from('purchase_request_items')
+          // @ts-expect-error - Supabase type inference issue
+          .insert(itemsToInsert)
+
+        if (insertError) throw insertError
+      }
+
+      // Delete removed items (best effort)
+      if (removedItemIds.length > 0) {
+        const { data: deletedRows, error: deleteRemovedError } = await supabase
+          .from('purchase_request_items')
+          .delete()
+          .in('id', removedItemIds)
+          .select('id')
+
+        // If RLS blocks, this might delete 0 rows without error.
+        // Still: the core issue (duplication) is solved because we no longer re-insert existing rows.
+        if (deleteRemovedError) throw deleteRemovedError
+
+        const deletedCount = (deletedRows || []).length
+        if (deletedCount !== removedItemIds.length) {
+          // Fallback for setups where DELETE is blocked by RLS (0 rows affected, no error).
+          // We "hide" removed items by marking notes with a reserved prefix; UI/queries can filter them out.
+          const { error: softRemoveError } = await supabase
+            .from('purchase_request_items')
+            // @ts-expect-error - Supabase type inference issue
+            .update({ notes: `${REMOVED_NOTE_PREFIX} (no delete permission)` })
+            .in('id', removedItemIds)
+
+          if (softRemoveError) throw softRemoveError
+        }
+      }
 
       setSuccess(true)
       setTimeout(() => {
@@ -247,7 +319,7 @@ export default function PurchaseRequestEditForm({ request, items: initialItems }
                     label="Quantity"
                     type="number"
                     step="0.01"
-                    min="0"
+                    min="0.01"
                     value={item.quantity_requested || ''}
                     onChange={(e) => updateItem(index, 'quantity_requested', parseFloat(e.target.value))}
                     required

@@ -178,7 +178,7 @@ export default function SideMenu({ isOpen, onClose, canManage, userEmail }: Side
             ),
           },
           {
-            title: 'Transfer',
+            title: 'Send to Site',
             href: '#',
             icon: (
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -258,7 +258,7 @@ export default function SideMenu({ isOpen, onClose, canManage, userEmail }: Side
                     <div className="mt-1 space-y-1">
                       {item.items.map((subItem) => {
                         const isModal = subItem.href === '#'
-                        const modalType = subItem.title === 'Transfer' ? 'transfer' : null
+                        const modalType = subItem.title === 'Send to Site' ? 'transfer' : null
                         
                         if (isModal && modalType) {
                           return (

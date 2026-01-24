@@ -25,7 +25,7 @@ export default function SiteQuickActions({ siteId, canManage }: SiteQuickActions
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
               </svg>
             </div>
-            <span className="text-sm font-medium text-blue-500">Transfer</span>
+            <span className="text-sm font-medium text-blue-500">Send to Site</span>
           </button>
         )}
 
@@ -43,7 +43,7 @@ export default function SiteQuickActions({ siteId, canManage }: SiteQuickActions
       </div>
 
       {/* Modals */}
-      <TransferModal isOpen={transferOpen} onClose={() => setTransferOpen(false)} initialFromSiteId={siteId} />
+      <TransferModal isOpen={transferOpen} onClose={() => setTransferOpen(false)} initialToSiteId={siteId} />
     </>
   )
 }

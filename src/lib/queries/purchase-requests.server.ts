@@ -84,7 +84,7 @@ export async function getPurchaseRequests(): Promise<PurchaseRequest[]> {
   const requestIds = requests.map((r: { id: string }) => r.id)
   const { data: allItems, error: itemsError } = await supabase
     .from('purchase_request_items')
-    .select('purchase_request_id, quantity_requested, quantity_received, unit_price')
+    .select('purchase_request_id, quantity_requested, quantity_received, unit_price, notes')
     .in('purchase_request_id', requestIds)
   
   if (itemsError) throw itemsError
@@ -96,7 +96,10 @@ export async function getPurchaseRequests(): Promise<PurchaseRequest[]> {
     if (!itemsByRequest.has(requestId)) {
       itemsByRequest.set(requestId, [])
     }
-    itemsByRequest.get(requestId)!.push(item)
+    // Exclude "soft removed" items
+    if (!item.notes || !String(item.notes).startsWith('__REMOVED__')) {
+      itemsByRequest.get(requestId)!.push(item)
+    }
   })
   
   return (requests || []).map((request: any) => {
@@ -184,5 +187,6 @@ export async function getPurchaseRequestItems(requestId: string): Promise<Purcha
     .order('id')
   
   if (error) throw error
-  return data || []
+  // Hide "soft removed" items
+  return (data || []).filter((item: any) => !item.notes || !String(item.notes).startsWith('__REMOVED__'))
 }
