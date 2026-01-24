@@ -2,6 +2,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useSideMenu } from './SideMenuProvider'
+import VersionBadge from './VersionBadge'
 
 interface AppHeaderProps {
   variant?: 'full' | 'simple'
@@ -99,6 +100,11 @@ export default function AppHeader({
                 )}
                 {title && <h1 className="text-xl font-bold text-white">{title}</h1>}
               </div>
+              
+              {/* Version Badge */}
+              <div className="flex items-center">
+                <VersionBadge />
+              </div>
             </div>
           </div>
         </nav>
@@ -144,6 +150,11 @@ export default function AppHeader({
                   </div>
                 ))}
               </nav>
+            </div>
+            
+            {/* Version Badge */}
+            <div className="flex items-center">
+              <VersionBadge />
             </div>
           </div>
         </div>
