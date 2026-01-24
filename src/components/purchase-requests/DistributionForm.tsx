@@ -53,13 +53,16 @@ export default function DistributionForm({ requestId, items, flexibleItems }: Di
     const initialPlan: DistributionPlan = {}
     displayItems.forEach((item: any) => {
       const itemId = item.purchase_request_item_id || `flex-${item.product_id}`
-      if (item.target_site_id && item.quantity_available > 0) {
+      // Hide items that have no integer availability
+      const availableInt = Math.max(0, Math.floor(item.quantity_available || 0))
+      if (item.target_site_id && availableInt > 0) {
         if (!initialPlan[itemId]) {
           initialPlan[itemId] = {}
         }
         // Pre-fill with available quantity for target site (from request if available, otherwise use master stock)
         const quantityToPreFill = item.from_request?.quantity_available || item.quantity_available
-        initialPlan[itemId][item.target_site_id] = quantityToPreFill
+        // Distribution is integer-only
+        initialPlan[itemId][item.target_site_id] = Math.floor(quantityToPreFill)
       }
     })
     if (Object.keys(initialPlan).length > 0) {
@@ -104,10 +107,27 @@ export default function DistributionForm({ requestId, items, flexibleItems }: Di
       .reduce((sum, qty) => sum + qty, 0)
   }
 
+  const getItemId = (item: any): string => item.purchase_request_item_id || `flex-${item.product_id}`
+
+  const getAvailableInt = (item: any): number => Math.max(0, Math.floor(item.quantity_available || 0))
+
+  // Only show items that have something to distribute (integer availability > 0)
+  const visibleItems = displayItems.filter((item: any) => getAvailableInt(item) > 0)
+
+  const getMaxForSite = (item: any, siteId: string): number => {
+    const itemId = getItemId(item)
+    const available = getAvailableInt(item)
+    const current = distributionPlan[itemId]?.[siteId] || 0
+    const distributedTotal = getTotalDistributed(itemId)
+    // Allow editing current value, but never let total exceed available
+    const max = available - (distributedTotal - current)
+    return Math.max(0, Math.floor(max))
+  }
+
   const getRemaining = (item: DistributionItem | any): number => {
-    const itemId = item.purchase_request_item_id || `flex-${item.product_id}`
+    const itemId = getItemId(item)
     const distributed = getTotalDistributed(itemId)
-    return item.quantity_available - distributed
+    return getAvailableInt(item) - distributed
   }
 
   const handleDistribute = async () => {
@@ -127,10 +147,10 @@ export default function DistributionForm({ requestId, items, flexibleItems }: Di
     }
 
     // Validate no item exceeds available quantity
-    for (const item of displayItems) {
-      const itemId = item.purchase_request_item_id || `flex-${item.product_id}`
+    for (const item of visibleItems) {
+      const itemId = getItemId(item)
       const distributed = getTotalDistributed(itemId)
-      if (distributed > item.quantity_available) {
+      if (distributed > getAvailableInt(item)) {
         setError(`Cannot distribute more than available for ${item.product_name}`)
         return
       }
@@ -143,8 +163,8 @@ export default function DistributionForm({ requestId, items, flexibleItems }: Di
     try {
       // Create transfers for each distribution
       const transfers = []
-      for (const item of displayItems) {
-        const itemId = item.purchase_request_item_id || `flex-${item.product_id}`
+      for (const item of visibleItems) {
+        const itemId = getItemId(item)
         const itemPlan = distributionPlan[itemId] || {}
         for (const [siteId, quantity] of Object.entries(itemPlan)) {
           if (quantity && quantity > 0) {
@@ -152,8 +172,9 @@ export default function DistributionForm({ requestId, items, flexibleItems }: Di
               fromSiteId: masterSiteId,
               toSiteId: siteId,
               productId: item.product_id,
-              quantity,
-              notes: `Distribution from purchase request ${requestId.substring(0, 8)}`,
+              quantity: Math.floor(quantity),
+              // Store full requestId so we can report "received from PR" later
+              notes: `Distribution from PR:${requestId}`,
             })
           }
         }
@@ -194,29 +215,33 @@ export default function DistributionForm({ requestId, items, flexibleItems }: Di
         </p>
       )}
       
+      {visibleItems.length === 0 ? (
+        <div className="bg-neutral-800/30 border border-neutral-800 rounded-lg p-6 text-center text-neutral-500">
+          No items available to distribute right now.
+        </div>
+      ) : (
       <div className="space-y-6">
-        {displayItems.map((item: any) => {
-          const remaining = item.from_request 
-            ? (item.from_request.quantity_available - (getTotalDistributed(item.purchase_request_item_id) || 0))
-            : (item.quantity_available - (getTotalDistributed(item.purchase_request_item_id) || 0))
-          const distributed = getTotalDistributed(item.purchase_request_item_id)
+        {visibleItems.map((item: any) => {
+          const itemId = getItemId(item)
+          const distributed = getTotalDistributed(itemId)
+          const remaining = getRemaining(item)
           const hasAdditionalStock = item.additional_stock && item.additional_stock > 0
           
           return (
-            <div key={item.purchase_request_item_id} className="border border-neutral-800 rounded-lg p-4">
+            <div key={itemId} className="border border-neutral-800 rounded-lg p-4">
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h4 className="text-white font-medium">{item.product_name}</h4>
                   <p className="text-sm text-neutral-400 mt-1">
-                    <span className="text-green-400 font-medium">Total in Master: {item.quantity_available.toLocaleString()}</span> {item.product_unit}
+                    <span className="text-green-400 font-medium">Total in Master: {getAvailableInt(item).toLocaleString()}</span> {item.product_unit}
                     {item.from_request && (
                       <>
                         <span className="ml-2 text-blue-400">
-                          (From Request: {item.from_request.quantity_available.toLocaleString()})
+                          (From Request: {Math.floor(item.from_request.quantity_available || 0).toLocaleString()})
                         </span>
                         {hasAdditionalStock && (
                           <span className="ml-2 text-amber-400">
-                            (+ {item.additional_stock.toLocaleString()} from other sources)
+                            (+ {Math.floor(item.additional_stock || 0).toLocaleString()} from other sources)
                           </span>
                         )}
                       </>
@@ -235,7 +260,8 @@ export default function DistributionForm({ requestId, items, flexibleItems }: Di
 
               <div className="space-y-3">
                 {sites.map((site) => {
-                  const currentQty = distributionPlan[item.purchase_request_item_id]?.[site.id] || 0
+                  const currentQty = distributionPlan[itemId]?.[site.id] || 0
+                  const maxForSite = getMaxForSite(item, site.id)
                   return (
                     <div key={site.id} className="flex items-center space-x-3">
                       <div className="flex-1">
@@ -245,12 +271,15 @@ export default function DistributionForm({ requestId, items, flexibleItems }: Di
                         <Input
                           type="number"
                           min="0"
-                          max={item.quantity_available + currentQty}
-                          step="0.01"
+                          max={maxForSite}
+                          step="1"
                           value={currentQty || ''}
                           onChange={(e) => {
-                            const value = parseFloat(e.target.value) || 0
-                            updateDistribution(item.purchase_request_item_id, site.id, value)
+                            const raw = e.target.value
+                            const parsed = raw === '' ? 0 : parseInt(raw, 10)
+                            const value = Number.isFinite(parsed) ? parsed : 0
+                            const clamped = Math.min(Math.max(0, value), maxForSite)
+                            updateDistribution(itemId, site.id, clamped)
                           }}
                           placeholder="0"
                         />
@@ -264,6 +293,7 @@ export default function DistributionForm({ requestId, items, flexibleItems }: Di
           )
         })}
       </div>
+      )}
 
       {error && (
         <div className="mt-6 bg-red-500/20 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg text-sm">

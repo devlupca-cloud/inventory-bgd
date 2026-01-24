@@ -2,6 +2,7 @@ import ProtectedRoute from '@/components/auth/ProtectedRoute'
 import { getSiteInventoryServer } from '@/lib/queries/inventory.server'
 import { getSiteServer } from '@/lib/queries/sites.server'
 import { getSiteStats } from '@/lib/queries/site-stats.server'
+import { getSiteReceiptsByMonth } from '@/lib/queries/site-receipts.server'
 import InventoryTable from '@/components/inventory/InventoryTable'
 import MinLevelManager from '@/components/inventory/MinLevelManager'
 import SiteQuickActions from '@/components/inventory/SiteQuickActions'
@@ -28,10 +29,12 @@ async function SiteInventoryContent({
   params: Promise<{ siteId: string }>
 }) {
   const { siteId } = await params
-  const [site, inventory, stats] = await Promise.all([
+  const [site, inventory, stats, receipts] = await Promise.all([
     getSiteServer(siteId),
     getSiteInventoryServer(siteId),
     getSiteStats(siteId),
+    // Only current month for this view
+    getSiteReceiptsByMonth(siteId, 1),
   ])
   const canManage = await hasRole(['manager', 'owner'])
   const canSupervise = await hasRole(['supervisor', 'manager', 'owner'])
@@ -39,6 +42,8 @@ async function SiteInventoryContent({
   if (!site) {
     notFound()
   }
+
+  const currentMonth = receipts[0] || null
 
   return (
     <div className="min-h-screen bg-black">
@@ -110,6 +115,17 @@ async function SiteInventoryContent({
           <div className={`${(site.supervisor_name || site.supervisor_phone || site.address) ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
             <h2 className="text-lg font-semibold text-white mb-4">Quick Actions</h2>
             <SiteQuickActions siteId={siteId} canManage={canManage} canSupervise={canSupervise} />
+            <div className="mt-4">
+              <Link
+                href={`/inventory/${siteId}/received`}
+                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-colors"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3v18h18M7 13l3 3 7-7" />
+                </svg>
+                View received by month
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -172,13 +188,85 @@ async function SiteInventoryContent({
           </div>
         </div>
 
-        {/* Inventory Table */}
+        {/* Received (Current Month) */}
         <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden mb-6">
           <div className="px-6 py-4 border-b border-neutral-800">
-            <h2 className="text-lg font-semibold text-white">All Products</h2>
-            <p className="text-sm text-neutral-400 mt-1">Complete inventory list for {site.name}</p>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-semibold text-white">Received (this month)</h2>
+                <p className="text-sm text-neutral-400 mt-1">
+                  {currentMonth ? currentMonth.monthName : 'No receipts this month'}
+                </p>
+              </div>
+              <Link
+                href={`/inventory/${siteId}/received`}
+                className="px-3 py-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-sm text-neutral-200 transition-colors whitespace-nowrap"
+              >
+                View history
+              </Link>
+            </div>
           </div>
-          <InventoryTable items={inventory} />
+          {currentMonth ? (
+            <div className="px-6 py-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+                <div className="bg-neutral-800/30 border border-neutral-800 rounded-lg p-4">
+                  <p className="text-xs text-neutral-500 mb-1">Total qty</p>
+                  <p className="text-2xl font-bold text-white">{currentMonth.totalQuantity.toLocaleString()}</p>
+                </div>
+                <div className="bg-neutral-800/30 border border-neutral-800 rounded-lg p-4">
+                  <p className="text-xs text-neutral-500 mb-1">From Purchase Requests</p>
+                  <p className="text-2xl font-bold text-blue-400">
+                    {currentMonth.bySource.purchase_request.quantity.toLocaleString()}
+                  </p>
+                </div>
+                <div className="bg-neutral-800/30 border border-neutral-800 rounded-lg p-4">
+                  <p className="text-xs text-neutral-500 mb-1">From Master stock</p>
+                  <p className="text-2xl font-bold text-green-400">
+                    {currentMonth.bySource.master_stock.quantity.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="min-w-full">
+                  <thead>
+                    <tr className="border-b border-neutral-800">
+                      <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 uppercase">Date</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 uppercase">Product</th>
+                      <th className="px-3 py-2 text-right text-xs font-medium text-neutral-500 uppercase">Qty</th>
+                      <th className="px-3 py-2 text-left text-xs font-medium text-neutral-500 uppercase">Source</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-800">
+                    {currentMonth.rows.slice(-15).reverse().map((r, idx) => (
+                      <tr key={`${r.created_at}-${r.product_id}-${idx}`}>
+                        <td className="px-3 py-2 text-sm text-neutral-400 whitespace-nowrap">
+                          {new Date(r.created_at).toLocaleDateString('pt-BR')}
+                        </td>
+                        <td className="px-3 py-2 text-sm text-white">
+                          {r.product_name} <span className="text-xs text-neutral-500">({r.product_unit})</span>
+                        </td>
+                        <td className="px-3 py-2 text-sm text-neutral-200 text-right">
+                          {r.quantity.toLocaleString()}
+                        </td>
+                        <td className="px-3 py-2 text-sm">
+                          {r.source === 'purchase_request' ? (
+                            <span className="text-blue-400">Purchase Request</span>
+                          ) : (
+                            <span className="text-green-400">Master stock</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <div className="px-6 py-8 text-center text-sm text-neutral-500">
+              No items received this month.
+            </div>
+          )}
         </div>
 
         {/* Minimum Stock Levels Configuration */}

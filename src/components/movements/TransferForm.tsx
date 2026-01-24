@@ -1,8 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { transferBetweenSites } from '@/lib/rpc/inventory'
-import { getProductsClient, Product } from '@/lib/queries/products'
-import { getCurrentStock } from '@/lib/queries/inventory'
+import { getSiteInventory, SiteInventoryItem } from '@/lib/queries/inventory'
 import { getMasterSite, getSites } from '@/lib/queries/sites'
 import Select from '@/components/ui/Select'
 import Input from '@/components/ui/Input'
@@ -19,41 +18,22 @@ export default function TransferForm({ initialToSiteId = '', initialProductId = 
   const [masterSiteId, setMasterSiteId] = useState<string>('')
   const [masterSiteName, setMasterSiteName] = useState<string>('Master Warehouse')
   const [toSiteId, setToSiteId] = useState(initialToSiteId)
-  const [productId, setProductId] = useState(initialProductId)
-  const [quantity, setQuantity] = useState('')
   const [notes, setNotes] = useState('')
-  const [products, setProducts] = useState<Product[]>([])
   const [destinationSites, setDestinationSites] = useState<Array<{ id: string; name: string }>>([])
-  const [currentStock, setCurrentStock] = useState<number | null>(null)
-  const [loadingStock, setLoadingStock] = useState(false)
+  const [masterInventory, setMasterInventory] = useState<SiteInventoryItem[]>([])
+  const [search, setSearch] = useState('')
+  const [sendPlan, setSendPlan] = useState<Record<string, number | undefined>>({})
+  const [loadingInventory, setLoadingInventory] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
-    loadProducts()
     loadMasterAndSites()
     if (initialToSiteId) setToSiteId(initialToSiteId)
-    if (initialProductId) setProductId(initialProductId)
+    // initialProductId is ignored in the new UX (list-driven)
   }, [initialToSiteId, initialProductId])
-
-  useEffect(() => {
-    if (masterSiteId && productId) {
-      loadCurrentStock()
-    } else {
-      setCurrentStock(null)
-    }
-  }, [masterSiteId, productId])
-
-  const loadProducts = async () => {
-    try {
-      const data = await getProductsClient()
-      setProducts(data)
-    } catch (err) {
-      console.error('Error loading products:', err)
-    }
-  }
 
   const loadMasterAndSites = async () => {
     try {
@@ -68,18 +48,34 @@ export default function TransferForm({ initialToSiteId = '', initialProductId = 
     }
   }
 
-  const loadCurrentStock = async () => {
-    if (!masterSiteId || !productId) return
-    setLoadingStock(true)
+  const loadMasterInventory = async (masterId: string) => {
+    setLoadingInventory(true)
     try {
-      const stock = await getCurrentStock(masterSiteId, productId)
-      setCurrentStock(stock)
+      const inv = await getSiteInventory(masterId)
+      // Only show products that actually exist in Master
+      setMasterInventory(inv.filter((row) => (row.quantity_on_hand || 0) > 0))
     } catch (err) {
-      console.error('Error loading current stock:', err)
-      setCurrentStock(null)
+      console.error('Error loading master inventory:', err)
+      setMasterInventory([])
     } finally {
-      setLoadingStock(false)
+      setLoadingInventory(false)
     }
+  }
+
+  useEffect(() => {
+    if (masterSiteId) {
+      loadMasterInventory(masterSiteId)
+    }
+  }, [masterSiteId])
+
+  const setQty = (productId: string, raw: string, max: number) => {
+    const parsed = raw === '' ? 0 : parseInt(raw, 10)
+    const value = Number.isFinite(parsed) ? parsed : 0
+    const clamped = Math.min(Math.max(0, value), max)
+    setSendPlan(prev => ({
+      ...prev,
+      [productId]: clamped > 0 ? clamped : undefined,
+    }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -94,49 +90,76 @@ export default function TransferForm({ initialToSiteId = '', initialProductId = 
       return
     }
 
-    const quantityValue = parseFloat(quantity)
-    if (quantityValue <= 0) {
-      setError('Quantity must be greater than 0')
+    if (!toSiteId) {
+      setError('Please select a destination site')
       setLoading(false)
       return
     }
 
-    // Validate stock availability at source site
-    if (currentStock !== null && quantityValue > currentStock) {
-      setError(`Insufficient stock at Master. Available: ${currentStock.toLocaleString()}, Requested: ${quantityValue.toLocaleString()}`)
+    const transfers = Object.entries(sendPlan)
+      .filter(([_, qty]) => !!qty && qty > 0)
+      .map(([productId, qty]) => ({ productId, quantity: qty as number }))
+
+    if (transfers.length === 0) {
+      setError('Please enter quantities for at least one product')
       setLoading(false)
       return
     }
 
     try {
-      const result = await transferBetweenSites(
-        masterSiteId,
-        toSiteId,
-        productId,
-        parseFloat(quantity),
-        notes || undefined
-      )
-
-      if (result.success) {
-        setSuccess(true)
-        setTimeout(() => {
-          if (onClose) {
-            onClose()
-            router.refresh()
-          } else {
-            router.push('/inventory/master')
-            router.refresh()
-          }
-        }, 1500)
-      } else {
-        setError(result.message || 'Failed to send stock')
+      // Validate against Master inventory (integer-only)
+      const availability = new Map(masterInventory.map((row) => [row.product_id, Math.floor(row.quantity_on_hand || 0)]))
+      for (const t of transfers) {
+        const available = availability.get(t.productId) || 0
+        if (!Number.isInteger(t.quantity) || t.quantity <= 0) {
+          throw new Error('All quantities must be whole numbers greater than 0')
+        }
+        if (t.quantity > available) {
+          const name = masterInventory.find(r => r.product_id === t.productId)?.product?.name || 'product'
+          throw new Error(`Cannot send more than available for ${name}. Available: ${available}`)
+        }
       }
+
+      for (const t of transfers) {
+        const result = await transferBetweenSites(
+          masterSiteId,
+          toSiteId,
+          t.productId,
+          t.quantity,
+          // Tag as "master stock" so site monthly report can split origin
+          `Master send${notes ? ` - ${notes}` : ''}`
+        )
+
+        if (!result.success) {
+          throw new Error(result.message || 'Failed to send items')
+        }
+      }
+
+      setSuccess(true)
+      setSendPlan({})
+      setTimeout(() => {
+        if (onClose) {
+          onClose()
+          router.refresh()
+        } else {
+          router.push('/inventory/master')
+          router.refresh()
+        }
+      }, 1200)
     } catch (err: any) {
       setError(err.message || 'An error occurred')
     } finally {
       setLoading(false)
     }
   }
+
+  const filteredInventory = masterInventory.filter((row) => {
+    const q = search.trim().toLowerCase()
+    if (!q) return true
+    const name = row.product?.name?.toLowerCase() || ''
+    const unit = row.product?.unit?.toLowerCase() || ''
+    return name.includes(q) || unit.includes(q)
+  })
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -151,61 +174,73 @@ export default function TransferForm({ initialToSiteId = '', initialProductId = 
         </p>
       </div>
       
-      <Select
-        label="To Site"
-        value={toSiteId}
-        onChange={(e) => setToSiteId(e.target.value)}
-        required
-      >
-        <option value="">Select a site</option>
-        {destinationSites.map((site) => (
-          <option key={site.id} value={site.id}>
-            {site.name}
-          </option>
-        ))}
-      </Select>
-
-      <Select
-        label="Product"
-        value={productId}
-        onChange={(e) => setProductId(e.target.value)}
-        required
-        disabled={!!initialProductId}
-      >
-        <option value="">Select a product</option>
-        {products.map((product) => (
-          <option key={product.id} value={product.id}>
-            {product.name} ({product.unit})
-          </option>
-        ))}
-      </Select>
-
-      <div>
-        <Input
-          label="Quantity"
-          type="number"
-          step="0.01"
-          min="0.01"
-          max={currentStock !== null ? currentStock : undefined}
-          value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
-          placeholder="Enter quantity"
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Select
+          label="To Site"
+          value={toSiteId}
+          onChange={(e) => setToSiteId(e.target.value)}
           required
+        >
+          <option value="">Select a site</option>
+          {destinationSites.map((site) => (
+            <option key={site.id} value={site.id}>
+              {site.name}
+            </option>
+          ))}
+        </Select>
+
+        <Input
+          label="Search products"
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Type to filter..."
         />
-        {currentStock !== null && (
-          <p className="mt-1.5 text-sm text-neutral-400">
-            Available at Master: <span className={`font-medium ${currentStock > 0 ? 'text-green-400' : 'text-red-400'}`}>
-              {currentStock.toLocaleString()}
-            </span>
+      </div>
+
+      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-white font-medium">Available in Master</h4>
+          <p className="text-xs text-neutral-500">
+            {filteredInventory.length} products
           </p>
-        )}
-        {loadingStock && (
-          <p className="mt-1.5 text-sm text-neutral-500">Loading stock...</p>
-        )}
-        {quantity && currentStock !== null && parseFloat(quantity) > currentStock && (
-          <p className="mt-1.5 text-sm text-red-400">
-            ⚠️ Quantity exceeds available stock at source site
-          </p>
+        </div>
+
+        {loadingInventory ? (
+          <div className="py-8 text-center text-sm text-neutral-500">Loading inventory...</div>
+        ) : filteredInventory.length === 0 ? (
+          <div className="py-8 text-center text-sm text-neutral-500">No products found.</div>
+        ) : (
+          <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+            {filteredInventory.map((row) => {
+              const available = Math.floor(row.quantity_on_hand || 0)
+              const current = sendPlan[row.product_id] || 0
+              return (
+                <div key={row.product_id} className="border border-neutral-800 rounded-lg p-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-white font-medium">{row.product.name}</p>
+                      <p className="text-xs text-neutral-500 mt-1">
+                        Available: <span className="text-green-400 font-semibold">{available.toLocaleString()}</span> {row.product.unit}
+                      </p>
+                    </div>
+                    <div className="w-32">
+                      <Input
+                        type="number"
+                        min="0"
+                        step="1"
+                        max={available}
+                        value={current || ''}
+                        onChange={(e) => setQty(row.product_id, e.target.value, available)}
+                        placeholder="0"
+                        disabled={!toSiteId || available <= 0}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         )}
       </div>
 
@@ -229,8 +264,8 @@ export default function TransferForm({ initialToSiteId = '', initialProductId = 
         </div>
       )}
 
-      <Button type="submit" disabled={loading || !masterSiteId || !toSiteId || !productId || !quantity} className="w-full">
-        {loading ? 'Sending...' : 'Send to Site'}
+      <Button type="submit" disabled={loading || !masterSiteId || !toSiteId} className="w-full">
+        {loading ? 'Sending...' : 'Send Items'}
       </Button>
     </form>
   )

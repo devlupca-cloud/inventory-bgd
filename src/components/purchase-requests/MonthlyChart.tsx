@@ -146,7 +146,7 @@ export default function MonthlyChart({ data, maxValue }: MonthlyChartProps) {
                   <div className={`text-[10px] ${
                     isCurrent ? 'text-green-500/70' : 'text-neutral-600'
                   }`}>
-                    '{month.year.toString().slice(-2)}
+                    {month.year.toString().slice(-2)}
                   </div>
                 </div>
               )

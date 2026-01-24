@@ -25,25 +25,26 @@ export async function getMonthlyPurchaseOverview(): Promise<MonthlyPurchaseSumma
     .order('created_at', { ascending: false })
   
   if (requestsError) throw requestsError
-  if (!requests || requests.length === 0) {
-    return []
-  }
-  
-  const requestIds = requests.map((r: { id: string }) => r.id)
+  const requestIds = (requests || []).map((r: { id: string }) => r.id)
   
   // Get all purchase request items with product prices
   // We'll calculate based on quantity_requested and unit_price to show estimated purchase values
-  const { data: items, error: itemsError } = await supabase
-    .from('purchase_request_items')
-    .select(`
-      purchase_request_id,
-      quantity_requested,
-      quantity_received,
-      unit_price,
-      product_id,
-      product:products(id, price)
-    `)
-    .in('purchase_request_id', requestIds)
+  let items: any[] = []
+  if (requestIds.length > 0) {
+    const { data: itemsData, error: itemsError } = await supabase
+      .from('purchase_request_items')
+      .select(`
+        purchase_request_id,
+        quantity_requested,
+        quantity_received,
+        unit_price,
+        product_id,
+        product:products(id, price)
+      `)
+      .in('purchase_request_id', requestIds)
+    if (itemsError) throw itemsError
+    items = itemsData || []
+  }
   
   // Get all direct purchases (grouped by month)
   const { data: directPurchases, error: directPurchasesError } = await supabase
@@ -52,11 +53,6 @@ export async function getMonthlyPurchaseOverview(): Promise<MonthlyPurchaseSumma
     .is('deleted_at', null)
   
   if (directPurchasesError) throw directPurchasesError
-  
-  if (itemsError) throw itemsError
-  if (!items || items.length === 0) {
-    return []
-  }
   
   // Aggregate by month
   const monthlyData = new Map<string, {
@@ -69,7 +65,7 @@ export async function getMonthlyPurchaseOverview(): Promise<MonthlyPurchaseSumma
   
   // Create a map of request IDs to created_at dates
   const requestDateMap = new Map(
-    requests.map((r: { id: string; created_at: string }) => [r.id, new Date(r.created_at)])
+    (requests || []).map((r: { id: string; created_at: string }) => [r.id, new Date(r.created_at)])
   )
   
   // Process purchase request items
@@ -149,19 +145,40 @@ export async function getMonthlyPurchaseOverview(): Promise<MonthlyPurchaseSumma
   }
   
   // Convert to array and format
-  const summaries: MonthlyPurchaseSummary[] = Array.from(monthlyData.values())
-    .map(data => ({
+  if (monthlyData.size === 0) return []
+
+  const summariesByKey = new Map<string, MonthlyPurchaseSummary>()
+  for (const data of Array.from(monthlyData.values())) {
+    const key = `${data.year}-${data.month}`
+    summariesByKey.set(key, {
       year: data.year,
       month: data.month,
       monthName: new Date(data.year, data.month - 1, 1).toLocaleString('default', { month: 'long' }),
       totalValue: data.totalValue,
       totalItems: data.totalItems,
       requestCount: data.requestIds.size,
-    }))
-    .sort((a, b) => {
-      if (a.year !== b.year) return b.year - a.year
-      return b.month - a.month
     })
-  
-  return summaries
+  }
+
+  // Always return last 12 months (including 0 months) so charts look correct.
+  const now = new Date()
+  const filled: MonthlyPurchaseSummary[] = []
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const year = d.getFullYear()
+    const month = d.getMonth() + 1
+    const key = `${year}-${month}`
+    filled.push(
+      summariesByKey.get(key) || {
+        year,
+        month,
+        monthName: d.toLocaleString('default', { month: 'long' }),
+        totalValue: 0,
+        totalItems: 0,
+        requestCount: 0,
+      }
+    )
+  }
+
+  return filled
 }
