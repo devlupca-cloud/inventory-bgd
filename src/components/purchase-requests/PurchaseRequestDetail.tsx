@@ -217,13 +217,13 @@ export default function PurchaseRequestDetail({
             <div>
               <p className="text-xs text-neutral-500 mb-1">Estimated Value</p>
               <p className="text-lg font-bold text-blue-400">
-                R$ {items.reduce((sum, item) => sum + (item.quantity_requested * (item.unit_price || item.product.price || 0)), 0).toFixed(2)}
+                $ {items.reduce((sum, item) => sum + (item.quantity_requested * (item.unit_price || item.product.price || 0)), 0).toFixed(2)}
               </p>
             </div>
             <div>
               <p className="text-xs text-neutral-500 mb-1">Total Spent</p>
               <p className="text-lg font-bold text-green-400">
-                R$ {items.reduce((sum, item) => sum + (item.quantity_received * (item.unit_price || item.product.price || 0)), 0).toFixed(2)}
+                $ {items.reduce((sum, item) => sum + (item.quantity_received * (item.unit_price || item.product.price || 0)), 0).toFixed(2)}
               </p>
             </div>
             <div>
@@ -288,19 +288,19 @@ export default function PurchaseRequestDetail({
                     )}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <span className="text-sm text-neutral-300">R$ {unitPrice.toFixed(2)}</span>
+                    <span className="text-sm text-neutral-300">$ {unitPrice.toFixed(2)}</span>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div className="flex flex-col">
                       {spentTotal > 0 ? (
                         <>
-                          <span className="text-sm font-medium text-green-400">R$ {spentTotal.toFixed(2)}</span>
+                          <span className="text-sm font-medium text-green-400">$ {spentTotal.toFixed(2)}</span>
                           {estimatedTotal !== spentTotal && (
-                            <span className="text-xs text-neutral-500">Est: R$ {estimatedTotal.toFixed(2)}</span>
+                            <span className="text-xs text-neutral-500">Est: $ {estimatedTotal.toFixed(2)}</span>
                           )}
                         </>
                       ) : (
-                        <span className="text-sm text-neutral-400">R$ {estimatedTotal.toFixed(2)}</span>
+                        <span className="text-sm text-neutral-400">$ {estimatedTotal.toFixed(2)}</span>
                       )}
                     </div>
                   </td>

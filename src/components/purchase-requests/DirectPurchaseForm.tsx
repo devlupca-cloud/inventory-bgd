@@ -122,7 +122,7 @@ export default function DirectPurchaseForm() {
         <option value="">Select a product</option>
         {products.map((product) => (
           <option key={product.id} value={product.id}>
-            {product.name} ({product.unit}) - R$ {(product.price || 0).toFixed(2)}
+            {product.name} ({product.unit}) - $ {(product.price || 0).toFixed(2)}
           </option>
         ))}
       </Select>
@@ -140,7 +140,7 @@ export default function DirectPurchaseForm() {
         />
 
         <Input
-          label="Unit Price (R$)"
+          label="Unit Price ($)"
           type="number"
           step="0.01"
           min="0"
@@ -156,7 +156,7 @@ export default function DirectPurchaseForm() {
           <div className="flex justify-between items-center">
             <span className="text-neutral-400">Total Value:</span>
             <span className="text-xl font-bold text-green-400">
-              R$ {totalValue.toFixed(2)}
+              $ {totalValue.toFixed(2)}
             </span>
           </div>
         </div>

@@ -103,7 +103,7 @@ export async function createDirectPurchase(
       product_id: productId,
       movement_type: 'IN',
       quantity: quantity,
-      notes: `Direct purchase (ID: ${purchase.id.substring(0, 8)}) - R$ ${unitPrice.toFixed(2)}/unit`,
+      notes: `Direct purchase (ID: ${purchase.id.substring(0, 8)}) - $ ${unitPrice.toFixed(2)}/unit`,
     })
   
   if (movementError) {

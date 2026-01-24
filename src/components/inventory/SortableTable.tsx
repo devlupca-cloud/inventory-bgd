@@ -287,12 +287,12 @@ export default function SortableTable({ items, canManage, canSupervise, products
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right">
                   <span className="text-sm text-neutral-400">
-                    R$ {(item.product.price || 0).toFixed(2)}
+                    $ {(item.product.price || 0).toFixed(2)}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right">
                   <span className="text-sm font-medium text-green-400">
-                    R$ {((item.product.price || 0) * item.quantity_on_hand).toFixed(2)}
+                    $ {((item.product.price || 0) * item.quantity_on_hand).toFixed(2)}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">

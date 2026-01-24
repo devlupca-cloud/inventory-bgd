@@ -45,7 +45,7 @@ export default function MonthlyChart({ data, maxValue }: MonthlyChartProps) {
       return (
         <div className="bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 shadow-xl">
           <div className="text-xs text-neutral-400">{data.monthName} {data.year}</div>
-          <div className="text-lg font-bold text-green-400">R$ {data.totalValue.toFixed(2)}</div>
+          <div className="text-lg font-bold text-green-400">$ {data.totalValue.toFixed(2)}</div>
         </div>
       )
     }
@@ -82,7 +82,7 @@ export default function MonthlyChart({ data, maxValue }: MonthlyChartProps) {
           {/* Total */}
           <div className="text-right">
             <div className="text-2xl font-bold text-green-400">
-              R$ {chartData.reduce((sum, m) => sum + m.totalValue, 0).toFixed(2)}
+              $ {chartData.reduce((sum, m) => sum + m.totalValue, 0).toFixed(2)}
             </div>
             <div className="text-xs text-neutral-500">Total ({chartData.length} months)</div>
           </div>
@@ -108,7 +108,7 @@ export default function MonthlyChart({ data, maxValue }: MonthlyChartProps) {
             <YAxis 
               stroke="rgb(115, 115, 115)"
               style={{ fontSize: '12px' }}
-              tickFormatter={(value) => `R$ ${value}`}
+              tickFormatter={(value) => `$ ${value}`}
             />
             <Tooltip content={<CustomTooltip />} />
             <Area 
@@ -129,19 +129,19 @@ export default function MonthlyChart({ data, maxValue }: MonthlyChartProps) {
         <div className="text-center">
           <div className="text-xs text-neutral-500 mb-1">Average</div>
           <div className="text-lg font-semibold text-white">
-            R$ {(chartData.reduce((sum, m) => sum + m.totalValue, 0) / chartData.length).toFixed(2)}
+            $ {(chartData.reduce((sum, m) => sum + m.totalValue, 0) / chartData.length).toFixed(2)}
           </div>
         </div>
         <div className="text-center">
           <div className="text-xs text-neutral-500 mb-1">Highest</div>
           <div className="text-lg font-semibold text-amber-400">
-            R$ {Math.max(...chartData.map(m => m.totalValue)).toFixed(2)}
+            $ {Math.max(...chartData.map(m => m.totalValue)).toFixed(2)}
           </div>
         </div>
         <div className="text-center">
           <div className="text-xs text-neutral-500 mb-1">Lowest</div>
           <div className="text-lg font-semibold text-blue-400">
-            R$ {Math.min(...chartData.map(m => m.totalValue)).toFixed(2)}
+            $ {Math.min(...chartData.map(m => m.totalValue)).toFixed(2)}
           </div>
         </div>
       </div>

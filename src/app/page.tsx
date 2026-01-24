@@ -34,7 +34,7 @@ export default async function DashboardPage() {
                 </div>
               </div>
               <p className="text-2xl font-bold text-green-400">
-                R$ {dashboard.stats.monthlySpending.toFixed(2)}
+                $ {dashboard.stats.monthlySpending.toFixed(2)}
               </p>
               <p className="text-xs text-neutral-500 mt-1">This month</p>
             </div>

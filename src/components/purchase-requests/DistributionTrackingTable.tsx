@@ -125,7 +125,7 @@ export default function DistributionTrackingTable({ requestId, items }: Distribu
                     <span className="text-neutral-500">Requested: </span>
                     <span className="text-blue-400 font-medium">{totalQtyRequested} items</span>
                     <span className="text-neutral-600 mx-1">•</span>
-                    <span className="text-blue-400 font-medium">R$ {totalRequested.toFixed(2)}</span>
+                    <span className="text-blue-400 font-medium">$ {totalRequested.toFixed(2)}</span>
                   </div>
                   <div>
                     <span className="text-neutral-500">Distributed: </span>
@@ -134,7 +134,7 @@ export default function DistributionTrackingTable({ requestId, items }: Distribu
                     </span>
                     <span className="text-neutral-600 mx-1">•</span>
                     <span className={`font-medium ${totalDistributed > 0 ? 'text-green-400' : 'text-neutral-500'}`}>
-                      R$ {totalDistributed.toFixed(2)}
+                      $ {totalDistributed.toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -170,7 +170,7 @@ export default function DistributionTrackingTable({ requestId, items }: Distribu
                           <span className="text-sm text-neutral-300">{item.quantity_requested.toLocaleString()}</span>
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <span className="text-sm text-blue-400">R$ {item.value_requested.toFixed(2)}</span>
+                          <span className="text-sm text-blue-400">$ {item.value_requested.toFixed(2)}</span>
                         </td>
                         <td className="px-4 py-3 text-right">
                           <span className={`text-sm font-medium ${item.quantity_distributed > 0 ? 'text-green-400' : 'text-neutral-500'}`}>
@@ -179,7 +179,7 @@ export default function DistributionTrackingTable({ requestId, items }: Distribu
                         </td>
                         <td className="px-4 py-3 text-right">
                           <span className={`text-sm font-medium ${item.value_distributed > 0 ? 'text-green-400' : 'text-neutral-500'}`}>
-                            R$ {item.value_distributed.toFixed(2)}
+                            $ {item.value_distributed.toFixed(2)}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-center">

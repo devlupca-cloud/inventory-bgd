@@ -248,7 +248,7 @@ export default function PurchaseRequestForm({}: PurchaseRequestFormProps) {
                 <option value="">Select a product</option>
                 {products.map((product) => (
                   <option key={product.id} value={product.id}>
-                    {product.name} ({product.unit}) - R$ {(product.price || 0).toFixed(2)}
+                    {product.name} ({product.unit}) - $ {(product.price || 0).toFixed(2)}
                   </option>
                 ))}
               </Select>
@@ -266,7 +266,7 @@ export default function PurchaseRequestForm({}: PurchaseRequestFormProps) {
                 />
 
                 <Input
-                  label="Unit Price (R$)"
+                  label="Unit Price ($)"
                   type="number"
                   step="0.01"
                   min="0"
@@ -304,7 +304,7 @@ export default function PurchaseRequestForm({}: PurchaseRequestFormProps) {
                 <div className="text-right text-sm">
                   <span className="text-neutral-400">Subtotal: </span>
                   <span className="text-green-400 font-medium">
-                    R$ {(item.quantity_requested * item.unit_price).toFixed(2)}
+                    $ {(item.quantity_requested * item.unit_price).toFixed(2)}
                   </span>
                 </div>
               )}
@@ -326,7 +326,7 @@ export default function PurchaseRequestForm({}: PurchaseRequestFormProps) {
           <div className="flex justify-between items-center">
             <span className="text-neutral-400">Total Estimated:</span>
             <span className="text-xl font-bold text-green-400">
-              R$ {items.reduce((sum, item) => sum + (item.quantity_requested || 0) * (item.unit_price || 0), 0).toFixed(2)}
+              $ {items.reduce((sum, item) => sum + (item.quantity_requested || 0) * (item.unit_price || 0), 0).toFixed(2)}
             </span>
           </div>
         </div>

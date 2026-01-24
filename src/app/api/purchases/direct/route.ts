@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Add items to master warehouse inventory using RPC (handles packages correctly)
-    const purchaseNotes = `Direct purchase (ID: ${purchase.id.substring(0, 8)}) - R$ ${unit_price.toFixed(2)}/${selectedProduct?.unit || 'unit'}`
+    const purchaseNotes = `Direct purchase (ID: ${purchase.id.substring(0, 8)}) - $ ${unit_price.toFixed(2)}/${selectedProduct?.unit || 'unit'}`
     
     // @ts-expect-error - Supabase RPC type inference issue
     const { data: registerResult, error: registerError } = await supabase.rpc('rpc_register_in', {

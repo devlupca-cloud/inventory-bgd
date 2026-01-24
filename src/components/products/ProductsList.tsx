@@ -99,7 +99,7 @@ export default function ProductsList({ products, canManage }: ProductsListProps)
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right">
                 <span className="text-sm font-medium text-green-400">
-                  R$ {(product.price || 0).toFixed(2)}
+                  $ {(product.price || 0).toFixed(2)}
                 </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">

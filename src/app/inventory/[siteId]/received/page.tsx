@@ -67,7 +67,7 @@ async function SiteReceivedContent({
                   <div>
                     <h2 className="text-lg font-semibold text-white">{m.monthName}</h2>
                     <p className="text-xs text-neutral-500 mt-1">
-                      Total qty: {m.totalQuantity.toLocaleString()} • Total value: R$ {m.totalValue.toFixed(2)}
+                      Total qty: {m.totalQuantity.toLocaleString()} • Total value: $ {m.totalValue.toFixed(2)}
                       {m.totalValueIsEstimate && <span className="ml-2 text-neutral-600">(includes estimates)</span>}
                     </p>
                   </div>
@@ -116,7 +116,7 @@ async function SiteReceivedContent({
                               <span className="text-neutral-500">—</span>
                             ) : (
                               <span className={r.total_value_is_estimate ? 'text-neutral-400' : 'text-white'}>
-                                R$ {r.total_value.toFixed(2)}
+                                $ {r.total_value.toFixed(2)}
                                 {r.total_value_is_estimate && <span className="text-xs text-neutral-600"> (est.)</span>}
                               </span>
                             )}

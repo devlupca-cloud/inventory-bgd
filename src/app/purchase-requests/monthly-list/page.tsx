@@ -96,7 +96,7 @@ async function MonthlyPurchaseListContent({
             <div className="bg-neutral-800 rounded-lg p-4">
               <p className="text-sm text-neutral-400">Total Spent</p>
               <p className="text-2xl font-bold text-amber-400 mt-1">
-                R$ {purchaseList.totalValue.toFixed(2)}
+                $ {purchaseList.totalValue.toFixed(2)}
               </p>
             </div>
           </div>
@@ -155,12 +155,12 @@ async function MonthlyPurchaseListContent({
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
                         <span className="text-sm text-neutral-400">
-                          R$ {(item.unit_price || 0).toFixed(2)}
+                          $ {(item.unit_price || 0).toFixed(2)}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
                         <span className="text-sm font-medium text-green-400">
-                          R$ {(item.quantity_to_purchase * (item.unit_price || 0)).toFixed(2)}
+                          $ {(item.quantity_to_purchase * (item.unit_price || 0)).toFixed(2)}
                         </span>
                       </td>
                     </tr>
@@ -172,7 +172,7 @@ async function MonthlyPurchaseListContent({
                       Grand Total:
                     </td>
                     <td className="px-6 py-3 text-right text-sm font-bold text-green-400">
-                      R$ {purchaseList.totalValue.toFixed(2)}
+                      $ {purchaseList.totalValue.toFixed(2)}
                     </td>
                   </tr>
                 </tfoot>

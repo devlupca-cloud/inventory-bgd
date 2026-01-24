@@ -328,7 +328,7 @@ export default function PurchaseRequestEditForm({ request, items: initialItems }
 
                 <div>
                   <Input
-                    label="Unit Price (R$)"
+                    label="Unit Price ($)"
                     type="number"
                     step="0.01"
                     min="0"

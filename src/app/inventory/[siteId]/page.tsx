@@ -136,7 +136,7 @@ async function SiteInventoryContent({
               <div>
                 <p className="text-sm text-neutral-400">Total Gasto</p>
                 <p className="text-2xl font-bold text-green-400 mt-1">
-                  R$ {stats.totalSpent.toFixed(2)}
+                  $ {stats.totalSpent.toFixed(2)}
                 </p>
                 <p className="text-xs text-neutral-500 mt-1">em compras</p>
               </div>

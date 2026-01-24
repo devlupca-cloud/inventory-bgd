@@ -82,7 +82,7 @@ async function MonthlyPurchaseOverviewContent() {
                       </div>
                       <div className="text-right">
                         <p className="text-xl font-bold text-green-400">
-                          R$ {month.totalValue.toFixed(2)}
+                          $ {month.totalValue.toFixed(2)}
                         </p>
                         <p className="text-xs text-neutral-500 mt-1">Total spent</p>
                       </div>

@@ -146,7 +146,7 @@ export default function ProductForm({ product }: ProductFormProps) {
         </Select>
 
         <Input
-          label="Price per Purchase Unit (R$)"
+          label="Price per Purchase Unit ($)"
           type="number"
           step="0.01"
           min="0"
@@ -189,7 +189,7 @@ export default function ProductForm({ product }: ProductFormProps) {
             <strong>Example:</strong> 1 {unit} = {unitsPerPackage} {baseUnit}
             {parseFloat(price) > 0 && (
               <>
-                {' '}• Cost per {baseUnit}: R$ {(parseFloat(price) / parseFloat(unitsPerPackage)).toFixed(2)}
+                {' '}• Cost per {baseUnit}: $ {(parseFloat(price) / parseFloat(unitsPerPackage)).toFixed(2)}
               </>
             )}
           </div>

@@ -92,17 +92,17 @@ export default function PurchaseRequestList({ requests }: PurchaseRequestListPro
                   {request.total_value_spent && request.total_value_spent > 0 ? (
                     <>
                       <span className="text-sm font-medium text-green-400">
-                        R$ {request.total_value_spent.toFixed(2)}
+                        $ {request.total_value_spent.toFixed(2)}
                       </span>
                       {request.total_value_estimated && request.total_value_estimated !== request.total_value_spent && (
                         <span className="text-xs text-neutral-500">
-                          Est: R$ {request.total_value_estimated.toFixed(2)}
+                          Est: $ {request.total_value_estimated.toFixed(2)}
                         </span>
                       )}
                     </>
                   ) : (
                     <span className="text-sm text-neutral-400">
-                      R$ {request.total_value_estimated?.toFixed(2) || '0.00'}
+                      $ {request.total_value_estimated?.toFixed(2) || '0.00'}
                     </span>
                   )}
                 </div>

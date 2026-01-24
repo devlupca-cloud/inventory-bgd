@@ -85,7 +85,7 @@ async function MasterInventoryContent() {
               <div>
                 <p className="text-sm text-neutral-400">Total Value</p>
                 <p className="text-2xl font-bold text-green-400 mt-1">
-                  R$ {inventory.reduce((sum, item) => sum + ((item.product.price || 0) * item.quantity_on_hand), 0).toFixed(2)}
+                  $ {inventory.reduce((sum, item) => sum + ((item.product.price || 0) * item.quantity_on_hand), 0).toFixed(2)}
                 </p>
               </div>
               <div className="w-12 h-12 bg-amber-500/20 rounded-lg flex items-center justify-center">

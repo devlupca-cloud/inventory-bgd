@@ -24,3 +24,11 @@ export function formatNumber(num: number): string {
     maximumFractionDigits: 2,
   })
 }
+
+export function formatCurrency(amount: number): string {
+  return `$${amount.toFixed(2)}`
+}
+
+export function formatCurrencyLabel(): string {
+  return '$'
+}
