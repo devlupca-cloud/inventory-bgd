@@ -1,6 +1,6 @@
 // Application version
 // Update this when releasing a new version
-export const APP_VERSION = '1.0.0';
+export const APP_VERSION = '1.0.2';
 
 // Version metadata
 export const VERSION_INFO = {
