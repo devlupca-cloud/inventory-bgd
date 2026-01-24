@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
+import DistributionTrackingTable from './DistributionTrackingTable'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -92,6 +93,20 @@ export default function PurchaseRequestDetail({
     }
   }
 
+  const handleAutoFill = () => {
+    const autoFilledItems: Record<string, { quantity: number; price?: number }> = {}
+    items.forEach(item => {
+      const remaining = item.quantity_requested - item.quantity_received
+      if (remaining > 0) {
+        autoFilledItems[item.id] = {
+          quantity: remaining,
+          price: item.unit_price || item.product.price || undefined,
+        }
+      }
+    })
+    setReceivedItems(autoFilledItems)
+  }
+
   const handleReceive = async () => {
     setLoading(true)
     setError('')
@@ -146,7 +161,11 @@ export default function PurchaseRequestDetail({
           <div>
             <h2 className="text-xl font-bold text-white">Purchase Request #{request.id.slice(0, 8)}</h2>
             <p className="text-sm text-neutral-500 mt-1">
-              Site: {request.site.name}
+              {request.site ? (
+                <>Site: {request.site.name}</>
+              ) : (
+                <span className="italic text-neutral-600">General Request (no specific site)</span>
+              )}
             </p>
             <p className="text-xs text-neutral-600 mt-1">
               {request.status === 'draft' && 'Draft - Not yet submitted'}
@@ -201,16 +220,49 @@ export default function PurchaseRequestDetail({
         )}
       </div>
 
+      {/* Financial Summary */}
+      {items.length > 0 && (
+        <div className="px-6 py-4 border-b border-neutral-800 bg-neutral-800/30">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <p className="text-xs text-neutral-500 mb-1">Total Items</p>
+              <p className="text-lg font-bold text-white">{items.length}</p>
+            </div>
+            <div>
+              <p className="text-xs text-neutral-500 mb-1">Estimated Value</p>
+              <p className="text-lg font-bold text-blue-400">
+                R$ {items.reduce((sum, item) => sum + (item.quantity_requested * (item.unit_price || item.product.price || 0)), 0).toFixed(2)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-neutral-500 mb-1">Total Spent</p>
+              <p className="text-lg font-bold text-green-400">
+                R$ {items.reduce((sum, item) => sum + (item.quantity_received * (item.unit_price || item.product.price || 0)), 0).toFixed(2)}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-neutral-500 mb-1">Items Purchased</p>
+              <p className="text-lg font-bold text-amber-400">
+                {items.reduce((sum, item) => sum + item.quantity_received, 0).toLocaleString()}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Items */}
       <div className="px-6 py-4">
-        <h3 className="text-lg font-semibold text-white mb-4">Items</h3>
+        <h3 className="text-lg font-semibold text-white mb-4">Items Requested</h3>
         <div className="overflow-x-auto">
           <table className="min-w-full">
             <thead>
               <tr className="border-b border-neutral-700">
                 <th className="px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase">Product</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase">Target Site</th>
                 <th className="px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase">Requested</th>
                 <th className="px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase">Purchased</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase">Unit Price</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase">Total Value</th>
                 {receivingMode && (
                   <>
                     <th className="px-4 py-2 text-left text-xs font-medium text-neutral-500 uppercase">Qty Purchased</th>
@@ -220,11 +272,23 @@ export default function PurchaseRequestDetail({
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-800">
-              {items.map((item) => (
-                <tr key={item.id}>
+              {items.map((item) => {
+                const unitPrice = item.unit_price || item.product.price || 0
+                const estimatedTotal = item.quantity_requested * unitPrice
+                const spentTotal = item.quantity_received * unitPrice
+                
+                return (
+                <tr key={item.id} className={item.quantity_received > 0 ? 'bg-green-500/5' : ''}>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <span className="text-sm text-white">{item.product.name}</span>
+                    <span className="text-sm text-white font-medium">{item.product.name}</span>
                     <span className="text-xs text-neutral-500 ml-1">({item.product.unit})</span>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    {item.target_site ? (
+                      <span className="text-sm text-blue-400 font-medium">{item.target_site.name}</span>
+                    ) : (
+                      <span className="text-sm text-neutral-500 italic">Not specified</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span className="text-sm text-neutral-300">{item.quantity_requested.toLocaleString()}</span>
@@ -236,6 +300,23 @@ export default function PurchaseRequestDetail({
                     {item.quantity_received < item.quantity_requested && item.quantity_received > 0 && (
                       <span className="text-xs text-neutral-500 ml-1">(partial)</span>
                     )}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="text-sm text-neutral-300">R$ {unitPrice.toFixed(2)}</span>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <div className="flex flex-col">
+                      {spentTotal > 0 ? (
+                        <>
+                          <span className="text-sm font-medium text-green-400">R$ {spentTotal.toFixed(2)}</span>
+                          {estimatedTotal !== spentTotal && (
+                            <span className="text-xs text-neutral-500">Est: R$ {estimatedTotal.toFixed(2)}</span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-sm text-neutral-400">R$ {estimatedTotal.toFixed(2)}</span>
+                      )}
+                    </div>
                   </td>
                   {receivingMode && (
                     <>
@@ -276,7 +357,7 @@ export default function PurchaseRequestDetail({
                     </>
                   )}
                 </tr>
-              ))}
+              )})}
             </tbody>
           </table>
         </div>
@@ -295,16 +376,37 @@ export default function PurchaseRequestDetail({
         </div>
       )}
 
+      {/* Distribution Tracking Section - only show if items have been purchased */}
+      {items.some(item => item.quantity_received > 0) && (
+        <div className="px-6 py-4 border-t border-neutral-800">
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold text-white mb-2">Distribution Tracking</h3>
+            <p className="text-sm text-neutral-500">Track what each site requested vs what they received</p>
+          </div>
+          <DistributionTrackingTable requestId={request.id} items={items} />
+        </div>
+      )}
+
       {/* Actions */}
       <div className="px-6 py-4 border-t border-neutral-800">
         {/* Submit button for draft requests (anyone who created it) */}
         {request.status === 'draft' && (
           <div className="space-y-3">
-            <Button onClick={handleSubmit} disabled={loading}>
-              {loading ? 'Submitting...' : 'Submit for Approval'}
-            </Button>
+            <div className="flex gap-3">
+              <Button onClick={handleSubmit} disabled={loading}>
+                {loading ? 'Submitting...' : 'Submit for Approval'}
+              </Button>
+              <Link href={`/purchase-requests/${request.id}/edit`}>
+                <Button variant="secondary">
+                  <svg className="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Edit Draft
+                </Button>
+              </Link>
+            </div>
             <p className="text-xs text-neutral-500">
-              Submit this request to send it for manager approval. Once submitted, you won't be able to edit it.
+              Edit this draft or submit it to send for manager approval. Once submitted, you won't be able to edit it.
             </p>
           </div>
         )}
@@ -330,7 +432,11 @@ export default function PurchaseRequestDetail({
           )}
           {request.status === 'approved' && !receivingMode && (
             <div className="space-y-2">
-              <Button onClick={() => setReceivingMode(true)}>
+              <Button onClick={() => {
+                setReceivingMode(true)
+                // Auto-fill immediately when entering receiving mode
+                setTimeout(() => handleAutoFill(), 100)
+              }}>
                 Register Purchase
               </Button>
               <p className="text-xs text-neutral-500">
@@ -340,7 +446,7 @@ export default function PurchaseRequestDetail({
           )}
           {receivingMode && (
             <div className="space-y-3">
-              <div className="flex space-x-4">
+              <div className="flex items-center space-x-3">
                 <Button onClick={handleReceive} disabled={loading}>
                   {loading ? 'Registering...' : 'Complete Purchase'}
                 </Button>
@@ -350,9 +456,21 @@ export default function PurchaseRequestDetail({
                 }}>
                   Cancel
                 </Button>
+                <div className="flex-1"></div>
+                <Button 
+                  variant="secondary" 
+                  size="sm"
+                  onClick={handleAutoFill}
+                  className="border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
+                >
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Fill with Requested
+                </Button>
               </div>
               <p className="text-xs text-neutral-500">
-                Enter the quantities and prices you actually purchased. This will add items to inventory.
+                Values are pre-filled with requested quantities and prices. Adjust if needed before completing.
               </p>
             </div>
           )}

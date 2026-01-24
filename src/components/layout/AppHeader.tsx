@@ -35,7 +35,7 @@ function getBreadcrumbs(pathname: string) {
 
     // Map path segments to readable labels
     const labelMap: Record<string, string> = {
-      'inventory': 'Inventory',
+      'inventory': 'Master Warehouse',
       'master': 'Master Warehouse',
       'sites': 'Sites',
       'products': 'Products',

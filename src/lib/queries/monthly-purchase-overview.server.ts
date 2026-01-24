@@ -45,6 +45,14 @@ export async function getMonthlyPurchaseOverview(): Promise<MonthlyPurchaseSumma
     `)
     .in('purchase_request_id', requestIds)
   
+  // Get all direct purchases (grouped by month)
+  const { data: directPurchases, error: directPurchasesError } = await supabase
+    .from('direct_purchases')
+    .select('product_id, quantity_purchased, unit_price, purchased_at, product:products(id, price)')
+    .is('deleted_at', null)
+  
+  if (directPurchasesError) throw directPurchasesError
+  
   if (itemsError) throw itemsError
   if (!items || items.length === 0) {
     return []
@@ -64,7 +72,8 @@ export async function getMonthlyPurchaseOverview(): Promise<MonthlyPurchaseSumma
     requests.map((r: { id: string; created_at: string }) => [r.id, new Date(r.created_at)])
   )
   
-  for (const item of items) {
+  // Process purchase request items
+  for (const item of items || []) {
     const itemData = item as any
     const requestDate = requestDateMap.get(itemData.purchase_request_id)
     if (!requestDate) continue
@@ -104,6 +113,37 @@ export async function getMonthlyPurchaseOverview(): Promise<MonthlyPurchaseSumma
         totalValue: itemValue,
         totalItems: quantityToCount,
         requestIds: new Set([itemData.purchase_request_id]),
+      })
+    }
+  }
+  
+  // Process direct purchases
+  for (const purchase of directPurchases || []) {
+    const purchaseData = purchase as any
+    const purchaseDate = new Date(purchaseData.purchased_at)
+    const year = purchaseDate.getFullYear()
+    const month = purchaseDate.getMonth() + 1
+    const key = `${year}-${month}`
+    
+    const quantityPurchased = purchaseData.quantity_purchased || 0
+    const product = purchaseData.product as any
+    const productPrice = product?.price || 0
+    const unitPrice = purchaseData.unit_price && purchaseData.unit_price > 0 ? purchaseData.unit_price : productPrice
+    const purchaseValue = quantityPurchased * unitPrice
+    
+    if (purchaseValue <= 0 || quantityPurchased <= 0) continue
+    
+    const existing = monthlyData.get(key)
+    if (existing) {
+      existing.totalValue += purchaseValue
+      existing.totalItems += quantityPurchased
+    } else {
+      monthlyData.set(key, {
+        year,
+        month,
+        totalValue: purchaseValue,
+        totalItems: quantityPurchased,
+        requestIds: new Set(), // Direct purchases don't have request IDs
       })
     }
   }

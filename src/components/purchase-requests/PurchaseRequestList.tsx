@@ -49,10 +49,16 @@ export default function PurchaseRequestList({ requests }: PurchaseRequestListPro
         <thead>
           <tr className="border-b border-neutral-800">
             <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
-              Site
+              Target Sites
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
               Status
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+              Items
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+              Total Value
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
               Requested By
@@ -69,12 +75,37 @@ export default function PurchaseRequestList({ requests }: PurchaseRequestListPro
           {requests.map((request) => (
             <tr key={request.id} className="hover:bg-neutral-800/50 transition-colors">
               <td className="px-6 py-4 whitespace-nowrap">
-                <span className="text-sm font-medium text-white">{request.site?.name || 'Unknown Site'}</span>
+                <span className="text-sm text-neutral-500 italic">Multiple sites</span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <Badge variant={getStatusBadge(request.status)}>
                   {getStatusLabel(request.status)}
                 </Badge>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <span className="text-sm text-neutral-300">
+                  {request.total_items || 0} item{(request.total_items || 0) !== 1 ? 's' : ''}
+                </span>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="flex flex-col">
+                  {request.total_value_spent && request.total_value_spent > 0 ? (
+                    <>
+                      <span className="text-sm font-medium text-green-400">
+                        R$ {request.total_value_spent.toFixed(2)}
+                      </span>
+                      {request.total_value_estimated && request.total_value_estimated !== request.total_value_spent && (
+                        <span className="text-xs text-neutral-500">
+                          Est: R$ {request.total_value_estimated.toFixed(2)}
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-sm text-neutral-400">
+                      R$ {request.total_value_estimated?.toFixed(2) || '0.00'}
+                    </span>
+                  )}
+                </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <span className="text-sm text-neutral-300">

@@ -40,9 +40,34 @@ export interface SiteSummary {
   total_products: number
   low_stock_count: number
   last_movement: string | null
+  is_master?: boolean
 }
 
-export async function getDashboardData() {
+export interface DashboardStats {
+  totalAlerts: number
+  totalPendingRequests: number
+  totalSites: number
+  monthlySpending: number
+  pendingDistributions: number
+  fulfilledRequests: number
+}
+
+export interface MasterSiteInfo {
+  id: string
+  name: string
+  total_products: number
+}
+
+export interface DashboardData {
+  lowStockAlerts: LowStockAlert[]
+  pendingRequests: PendingRequest[]
+  recentMovements: RecentMovement[]
+  siteSummaries: SiteSummary[]
+  masterSite: MasterSiteInfo | null
+  stats: DashboardStats
+}
+
+export async function getDashboardData(): Promise<DashboardData> {
   const supabase = await createServerSupabaseClient()
   
   // Get low stock alerts (top 5)
@@ -138,7 +163,8 @@ export async function getDashboardData() {
   // Get site summaries
   const { data: sites } = await supabase
     .from('sites')
-    .select('id, name, address')
+    .select('id, name, address, is_master')
+    .is('deleted_at', null)
     .order('name')
 
   // Get inventory counts per site
@@ -157,21 +183,79 @@ export async function getDashboardData() {
     .select('site_id, created_at')
     .order('created_at', { ascending: false })
 
-  // Build site summaries
-  const siteSummaries: SiteSummary[] = (sites || []).map((site: { id: string; name: string; address: string | null }) => {
-    const productCount = (inventoryCounts || []).filter((i: { site_id: string }) => i.site_id === site.id).length
-    const lowCount = (lowStockCounts || []).filter((l: { site_id: string }) => l.site_id === site.id).length
-    const lastMov = (lastMovements || []).find((m: { site_id: string }) => m.site_id === site.id)
-    
-    return {
-      id: site.id,
-      name: site.name,
-      address: site.address,
-      total_products: productCount,
-      low_stock_count: lowCount,
-      last_movement: (lastMov as { created_at: string } | undefined)?.created_at || null
-    }
-  })
+  // Build site summaries (exclude master from regular sites list)
+  const siteSummaries: SiteSummary[] = (sites || [])
+    .filter((site: { is_master: boolean }) => !site.is_master)
+    .map((site: { id: string; name: string; address: string | null; is_master: boolean }) => {
+      const productCount = (inventoryCounts || []).filter((i: { site_id: string }) => i.site_id === site.id).length
+      const lowCount = (lowStockCounts || []).filter((l: { site_id: string }) => l.site_id === site.id).length
+      const lastMov = (lastMovements || []).find((m: { site_id: string }) => m.site_id === site.id)
+      
+      return {
+        id: site.id,
+        name: site.name,
+        address: site.address,
+        total_products: productCount,
+        low_stock_count: lowCount,
+        last_movement: (lastMov as { created_at: string } | undefined)?.created_at || null,
+        is_master: false
+      }
+    })
+  
+  // Get master site info
+  const masterSite = (sites || []).find((site: { is_master: boolean }) => site.is_master)
+  
+  // Get monthly spending (current month)
+  const now = new Date()
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
+  
+  // Get fulfilled purchase requests this month
+  const { data: fulfilledRequests } = await supabase
+    .from('purchase_requests')
+    .select('id')
+    .in('status', ['fulfilled', 'partially_fulfilled'])
+    .gte('updated_at', startOfMonth.toISOString())
+    .lte('updated_at', endOfMonth.toISOString())
+    .is('deleted_at', null)
+  
+  // Get purchase request items received this month
+  const fulfilledRequestIds = (fulfilledRequests || []).map((r: { id: string }) => r.id)
+  const { data: monthlyItems } = fulfilledRequestIds.length > 0 ? await supabase
+    .from('purchase_request_items')
+    .select('quantity_received, unit_price')
+    .in('purchase_request_id', fulfilledRequestIds)
+    .gt('quantity_received', 0) : { data: [] }
+  
+  // Get direct purchases this month
+  const { data: directPurchases } = await supabase
+    .from('direct_purchases')
+    .select('total_value')
+    .gte('purchased_at', startOfMonth.toISOString())
+    .lte('purchased_at', endOfMonth.toISOString())
+    .is('deleted_at', null)
+  
+  // Calculate monthly spending
+  const requestSpending = (monthlyItems || []).reduce((sum: number, item: { quantity_received: number; unit_price: number | null }) => {
+    return sum + (item.quantity_received * (item.unit_price || 0))
+  }, 0)
+  
+  const directSpending = (directPurchases || []).reduce((sum: number, purchase: { total_value: number }) => {
+    return sum + (purchase.total_value || 0)
+  }, 0)
+  
+  const monthlySpending = requestSpending + directSpending
+  
+  // Get pending distributions (fulfilled requests that haven't been fully distributed)
+  const { data: distributionRequests } = await supabase
+    .from('purchase_requests')
+    .select('id')
+    .in('status', ['fulfilled', 'partially_fulfilled'])
+    .is('deleted_at', null)
+  
+  // For now, we'll count fulfilled requests as potential distributions
+  // In a more sophisticated system, we'd check if items are still in master
+  const pendingDistributions = (distributionRequests || []).length
 
   // Format pending requests
   const formattedPendingRequests: PendingRequest[] = pendingRequests.map(req => ({
@@ -203,10 +287,19 @@ export async function getDashboardData() {
     pendingRequests: formattedPendingRequests,
     recentMovements: formattedMovements,
     siteSummaries,
+    masterSite: masterSite ? {
+      id: masterSite.id,
+      name: masterSite.name,
+      total_products: (inventoryCounts || []).filter((i: { site_id: string }) => i.site_id === masterSite.id).length,
+      total_items: 0 // Will be calculated if needed
+    } : null,
     stats: {
       totalAlerts: (lowStockAlerts || []).length,
       totalPendingRequests: formattedPendingRequests.length,
-      totalSites: (sites || []).length
+      totalSites: siteSummaries.length,
+      monthlySpending,
+      pendingDistributions,
+      fulfilledRequests: (fulfilledRequests || []).length
     }
   }
 }

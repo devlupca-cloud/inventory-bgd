@@ -3,10 +3,7 @@ import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import LogoutButton from '@/components/ui/LogoutButton'
-import StockInModal from '@/components/modals/StockInModal'
-import StockOutModal from '@/components/modals/StockOutModal'
 import TransferModal from '@/components/modals/TransferModal'
-import AlertsModal from '@/components/modals/AlertsModal'
 
 interface SideMenuProps {
   isOpen: boolean
@@ -30,10 +27,7 @@ type MenuItem = {
 export default function SideMenu({ isOpen, onClose, canManage, userEmail }: SideMenuProps) {
   const pathname = usePathname()
   const [isDesktop, setIsDesktop] = useState(false)
-  const [stockInOpen, setStockInOpen] = useState(false)
-  const [stockOutOpen, setStockOutOpen] = useState(false)
   const [transferOpen, setTransferOpen] = useState(false)
-  const [alertsOpen, setAlertsOpen] = useState(false)
   
   useEffect(() => {
     const checkDesktop = () => {
@@ -81,14 +75,11 @@ export default function SideMenu({ isOpen, onClose, canManage, userEmail }: Side
     }
   }
   
-  const handleModalClick = (modalType: 'stockIn' | 'stockOut' | 'transfer' | 'alerts') => {
+  const handleModalClick = (modalType: 'transfer') => {
     if (!isDesktop) {
       onClose()
     }
-    if (modalType === 'stockIn') setStockInOpen(true)
-    if (modalType === 'stockOut') setStockOutOpen(true)
     if (modalType === 'transfer') setTransferOpen(true)
-    if (modalType === 'alerts') setAlertsOpen(true)
   }
 
   const menuItems = useMemo((): MenuItem[] => {
@@ -117,15 +108,6 @@ export default function SideMenu({ isOpen, onClose, canManage, userEmail }: Side
           </svg>
         ),
       },
-      {
-        title: 'Inventory',
-        href: '/inventory',
-        icon: (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-          </svg>
-        ),
-      }
     )
     
     if (canManage) {
@@ -147,15 +129,6 @@ export default function SideMenu({ isOpen, onClose, canManage, userEmail }: Side
         icon: (
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-          </svg>
-        ),
-      },
-      {
-        title: 'Alerts',
-        href: '#',
-        icon: (
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
         ),
       },
@@ -182,38 +155,40 @@ export default function SideMenu({ isOpen, onClose, canManage, userEmail }: Side
       })
     }
     
-    items.push({
-      title: 'Stock Movements',
-      items: [
-        {
-          title: 'Stock IN',
-          href: '#',
-          icon: (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-          ),
-        },
-        {
-          title: 'Stock OUT',
-          href: '#',
-          icon: (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-            </svg>
-          ),
-        },
-        {
-          title: 'Transfer',
-          href: '#',
-          icon: (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-            </svg>
-          ),
-        },
-      ],
-    })
+    if (canManage) {
+      items.push({
+        title: 'Stock Movements',
+        items: [
+          {
+            title: 'New Request',
+            href: '/purchase-requests/new',
+            icon: (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            ),
+          },
+          {
+            title: 'Direct Purchase',
+            href: '/purchase-requests/direct',
+            icon: (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+            ),
+          },
+          {
+            title: 'Transfer',
+            href: '#',
+            icon: (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+              </svg>
+            ),
+          },
+        ],
+      })
+    }
     
     return items
   }, [canManage])
@@ -283,9 +258,7 @@ export default function SideMenu({ isOpen, onClose, canManage, userEmail }: Side
                     <div className="mt-1 space-y-1">
                       {item.items.map((subItem) => {
                         const isModal = subItem.href === '#'
-                        const modalType = subItem.title === 'Stock IN' ? 'stockIn' : 
-                                         subItem.title === 'Stock OUT' ? 'stockOut' : 
-                                         subItem.title === 'Transfer' ? 'transfer' : null
+                        const modalType = subItem.title === 'Transfer' ? 'transfer' : null
                         
                         if (isModal && modalType) {
                           return (
@@ -326,26 +299,6 @@ export default function SideMenu({ isOpen, onClose, canManage, userEmail }: Side
               // Regular menu item
               if ('show' in item && !item.show) return null
               if (!item.href) return null
-              
-              // Handle Alerts modal
-              if (item.href === '#' && item.title === 'Alerts') {
-                return (
-                  <button
-                    key={item.title}
-                    onClick={() => handleModalClick('alerts')}
-                    className={`
-                      w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors
-                      ${isActive('/alerts', menuItems)
-                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                        : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
-                      }
-                    `}
-                  >
-                    {item.icon}
-                    <span className="text-sm font-medium">{item.title}</span>
-                  </button>
-                )
-              }
 
               return (
                 <Link
@@ -380,10 +333,7 @@ export default function SideMenu({ isOpen, onClose, canManage, userEmail }: Side
       </aside>
       
       {/* Modals */}
-      <StockInModal isOpen={stockInOpen} onClose={() => setStockInOpen(false)} />
-      <StockOutModal isOpen={stockOutOpen} onClose={() => setStockOutOpen(false)} />
       <TransferModal isOpen={transferOpen} onClose={() => setTransferOpen(false)} />
-      <AlertsModal isOpen={alertsOpen} onClose={() => setAlertsOpen(false)} />
     </>
   )
 }

@@ -35,11 +35,16 @@ export interface PurchaseRequestItem {
   unit_price: number | null
   current_quantity_observed: number | null
   notes: string | null
+  target_site_id: string | null
   product: {
     id: string
     name: string
     unit: string
   }
+  target_site?: {
+    id: string
+    name: string
+  } | null
 }
 
 export async function getPurchaseRequests(): Promise<PurchaseRequest[]> {

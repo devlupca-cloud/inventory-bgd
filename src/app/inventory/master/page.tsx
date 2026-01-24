@@ -27,7 +27,7 @@ async function MasterInventoryContent() {
 
   return (
     <div className="min-h-screen bg-black">
-      <AppHeaderWrapper variant="simple" title="Master Warehouse" backHref="/inventory" />
+      <AppHeaderWrapper variant="simple" title="Master Warehouse" backHref="/" />
 
       {/* Main Content */}
       <main className="lg:ml-64 max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">

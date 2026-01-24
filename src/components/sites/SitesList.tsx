@@ -12,27 +12,73 @@ interface SitesListProps {
 
 export default function SitesList({ sites, canManage }: SitesListProps) {
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [settingMaster, setSettingMaster] = useState<string | null>(null)
   const supabase = createClient()
   const router = useRouter()
 
-  const handleDelete = async (siteId: string, siteName: string) => {
-    if (!confirm(`Are you sure you want to delete "${siteName}"?`)) {
+  const handleSetMaster = async (siteId: string, siteName: string) => {
+    if (!confirm(`Set "${siteName}" as the master warehouse? This will unset any other master site.`)) {
+      return
+    }
+
+    setSettingMaster(siteId)
+    try {
+      // First, unset all other master sites
+      const { error: unsetError } = await supabase
+        .from('sites')
+        // @ts-expect-error - Supabase type inference issue
+        .update({ is_master: false })
+        .eq('is_master', true)
+
+      if (unsetError) throw unsetError
+
+      // Then set this site as master
+      const { error: setError } = await supabase
+        .from('sites')
+        // @ts-expect-error - Supabase type inference issue
+        .update({ is_master: true })
+        .eq('id', siteId)
+
+      if (setError) throw setError
+      router.refresh()
+    } catch (err: any) {
+      alert(err.message || 'Failed to set master site')
+    } finally {
+      setSettingMaster(null)
+    }
+  }
+
+  const handleDelete = async (siteId: string, siteName: string, isMaster: boolean) => {
+    if (isMaster) {
+      alert('Master warehouse cannot be deleted')
+      return
+    }
+
+    if (!confirm(`Are you sure you want to delete "${siteName}"? This action cannot be undone.`)) {
       return
     }
 
     setDeleting(siteId)
     try {
-      // Soft delete - set deleted_at timestamp
-      const { error } = await supabase
-        .from('sites')
-        // @ts-expect-error - Supabase type inference issue
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', siteId)
+      // Use RPC function for soft delete
+      const { data, error } = await supabase.rpc('rpc_delete_site', {
+        p_site_id: siteId
+      })
 
-      if (error) throw error
+      if (error) {
+        console.error('Delete error:', error)
+        throw new Error(error.message || `Failed to delete site: ${error.code || 'Unknown error'}`)
+      }
+
+      if (!data || !data.success) {
+        throw new Error(data?.message || 'Failed to delete site')
+      }
+
+      // Success - refresh the page
       router.refresh()
     } catch (err: any) {
-      alert(err.message || 'Failed to delete site')
+      console.error('Delete site error:', err)
+      alert(err.message || 'Failed to delete site. Please check the console for details.')
     } finally {
       setDeleting(null)
     }
@@ -71,6 +117,9 @@ export default function SitesList({ sites, canManage }: SitesListProps) {
             <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
               Created
             </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-neutral-500 uppercase tracking-wider">
+              Type
+            </th>
             {canManage && (
               <th className="px-6 py-3 text-right text-xs font-medium text-neutral-500 uppercase tracking-wider">
                 Actions
@@ -88,12 +137,19 @@ export default function SitesList({ sites, canManage }: SitesListProps) {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
                   </div>
-                  <Link
-                    href={`/inventory/${site.id}`}
-                    className="text-sm font-medium text-white hover:text-green-400 transition-colors"
-                  >
-                    {site.name}
-                  </Link>
+                  <div>
+                    <Link
+                      href={site.is_master ? '/inventory/master' : `/inventory/${site.id}`}
+                      className="text-sm font-medium text-white hover:text-green-400 transition-colors"
+                    >
+                      {site.name}
+                    </Link>
+                    {site.is_master && (
+                      <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-amber-500/20 text-amber-400 rounded-full">
+                        Master
+                      </span>
+                    )}
+                  </div>
                 </div>
               </td>
               <td className="px-6 py-4">
@@ -104,15 +160,47 @@ export default function SitesList({ sites, canManage }: SitesListProps) {
                   {new Date(site.created_at).toLocaleDateString()}
                 </span>
               </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                {site.is_master ? (
+                  <span className="px-2 py-1 text-xs font-medium bg-amber-500/20 text-amber-400 rounded-full">
+                    Master Warehouse
+                  </span>
+                ) : (
+                  <span className="px-2 py-1 text-xs font-medium bg-neutral-800 text-neutral-400 rounded-full">
+                    Regular Site
+                  </span>
+                )}
+              </td>
               {canManage && (
                 <td className="px-6 py-4 whitespace-nowrap text-right">
-                  <button
-                    onClick={() => handleDelete(site.id, site.name)}
-                    disabled={deleting === site.id}
-                    className="px-3 py-1.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    {deleting === site.id ? 'Deleting...' : 'Delete'}
-                  </button>
+                  <div className="flex items-center justify-end space-x-2">
+                    {!site.is_master && (
+                      <>
+                        <button
+                          onClick={() => handleSetMaster(site.id, site.name)}
+                          disabled={settingMaster === site.id}
+                          className="px-3 py-1.5 text-xs text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 rounded-lg transition-colors disabled:opacity-50"
+                          title="Set as master warehouse"
+                        >
+                          {settingMaster === site.id ? 'Setting...' : 'Set Master'}
+                        </button>
+                        <Link
+                          href={`/sites/${site.id}/edit`}
+                          className="px-3 py-1.5 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-colors"
+                        >
+                          Edit
+                        </Link>
+                      </>
+                    )}
+                    <button
+                      onClick={() => handleDelete(site.id, site.name, site.is_master)}
+                      disabled={deleting === site.id || site.is_master}
+                      className="px-3 py-1.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={site.is_master ? 'Master warehouse cannot be deleted' : undefined}
+                    >
+                      {deleting === site.id ? 'Deleting...' : 'Delete'}
+                    </button>
+                  </div>
                 </td>
               )}
             </tr>

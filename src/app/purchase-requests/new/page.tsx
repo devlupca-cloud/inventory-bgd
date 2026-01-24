@@ -2,25 +2,15 @@ import ProtectedRoute from '@/components/auth/ProtectedRoute'
 import PurchaseRequestForm from '@/components/purchase-requests/PurchaseRequestForm'
 import Link from 'next/link'
 
-export default async function NewPurchaseRequestPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ siteId?: string }>
-}) {
+export default async function NewPurchaseRequestPage() {
   return (
     <ProtectedRoute>
-      <NewPurchaseRequestContent searchParams={searchParams} />
+      <NewPurchaseRequestContent />
     </ProtectedRoute>
   )
 }
 
-async function NewPurchaseRequestContent({
-  searchParams,
-}: {
-  searchParams: Promise<{ siteId?: string }>
-}) {
-  const params = await searchParams
-  const siteId = params.siteId || ''
+async function NewPurchaseRequestContent() {
   return (
     <div className="min-h-screen bg-black">
       {/* Navigation */}
@@ -44,7 +34,7 @@ async function NewPurchaseRequestContent({
       {/* Main Content */}
       <main className="lg:ml-64 max-w-3xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">
-          <PurchaseRequestForm initialSiteId={siteId} />
+          <PurchaseRequestForm />
         </div>
       </main>
     </div>

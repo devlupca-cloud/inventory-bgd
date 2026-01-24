@@ -76,6 +76,21 @@ export async function getMonthlyPurchaseList(
     .in('purchase_request_id', requestIds)
     .gt('quantity_received', 0) // Only items that were actually received
   
+  // Get direct purchases for this month
+  const { data: directPurchases, error: directPurchasesError } = await supabase
+    .from('direct_purchases')
+    .select(`
+      product_id,
+      quantity_purchased,
+      unit_price,
+      product:products(id, name, unit, price)
+    `)
+    .gte('purchased_at', startDate.toISOString())
+    .lte('purchased_at', endDate.toISOString())
+    .is('deleted_at', null)
+  
+  if (directPurchasesError) throw directPurchasesError
+  
   if (itemsError) throw itemsError
   if (!items || items.length === 0) {
     return {
@@ -96,7 +111,8 @@ export async function getMonthlyPurchaseList(
     unit_price: number | null
   }>()
   
-  for (const item of items) {
+  // Process purchase request items
+  for (const item of items || []) {
     const itemData = item as any
     const quantityReceived = itemData.quantity_received || 0
     if (quantityReceived <= 0) continue // Skip if nothing was received
@@ -119,6 +135,33 @@ export async function getMonthlyPurchaseList(
         product_unit: itemData.product.unit,
         total_purchased: quantityReceived,
         unit_price: itemData.unit_price || itemData.product.price || null,
+      })
+    }
+  }
+  
+  // Process direct purchases
+  for (const purchase of directPurchases || []) {
+    const purchaseData = purchase as any
+    const quantityPurchased = purchaseData.quantity_purchased || 0
+    if (quantityPurchased <= 0) continue
+    
+    const productKey = purchaseData.product_id
+    
+    const existing = aggregated.get(productKey)
+    if (existing) {
+      // Add purchased quantity to total purchased
+      existing.total_purchased += quantityPurchased
+      // Use the highest unit_price if multiple
+      if (purchaseData.unit_price && (!existing.unit_price || purchaseData.unit_price > existing.unit_price)) {
+        existing.unit_price = purchaseData.unit_price
+      }
+    } else {
+      aggregated.set(productKey, {
+        product_id: purchaseData.product_id,
+        product_name: purchaseData.product.name,
+        product_unit: purchaseData.product.unit,
+        total_purchased: quantityPurchased,
+        unit_price: purchaseData.unit_price || purchaseData.product.price || null,
       })
     }
   }

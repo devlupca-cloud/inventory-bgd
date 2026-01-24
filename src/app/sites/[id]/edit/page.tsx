@@ -28,6 +28,24 @@ async function EditSiteContent({
     notFound()
   }
 
+  // Prevent editing master site
+  if (site.is_master) {
+    return (
+      <div className="min-h-screen bg-black">
+        <AppHeaderWrapper variant="simple" title="Edit Site" backHref={`/inventory/master`} />
+        <main className="max-w-2xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
+              <p className="text-amber-400">
+                <strong>Master Warehouse cannot be edited.</strong> The master warehouse is a system site and cannot be modified or deleted.
+              </p>
+            </div>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-black">
       <AppHeaderWrapper variant="simple" title="Edit Site" backHref={`/inventory/${id}`} />

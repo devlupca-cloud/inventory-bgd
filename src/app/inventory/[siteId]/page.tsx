@@ -1,6 +1,7 @@
 import ProtectedRoute from '@/components/auth/ProtectedRoute'
 import { getSiteInventoryServer } from '@/lib/queries/inventory.server'
 import { getSiteServer } from '@/lib/queries/sites.server'
+import { getSiteStats } from '@/lib/queries/site-stats.server'
 import InventoryTable from '@/components/inventory/InventoryTable'
 import MinLevelManager from '@/components/inventory/MinLevelManager'
 import SiteQuickActions from '@/components/inventory/SiteQuickActions'
@@ -27,8 +28,11 @@ async function SiteInventoryContent({
   params: Promise<{ siteId: string }>
 }) {
   const { siteId } = await params
-  const site = await getSiteServer(siteId)
-  const inventory = await getSiteInventoryServer(siteId)
+  const [site, inventory, stats] = await Promise.all([
+    getSiteServer(siteId),
+    getSiteInventoryServer(siteId),
+    getSiteStats(siteId),
+  ])
   const canManage = await hasRole(['manager', 'owner'])
   const canSupervise = await hasRole(['supervisor', 'manager', 'owner'])
 
@@ -38,7 +42,7 @@ async function SiteInventoryContent({
 
   return (
     <div className="min-h-screen bg-black">
-      <AppHeaderWrapper variant="simple" title={site.name} backHref="/inventory" />
+      <AppHeaderWrapper variant="simple" title={site.name} backHref="/" />
 
       {/* Main Content */}
       <main className="lg:ml-64 max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
@@ -56,7 +60,7 @@ async function SiteInventoryContent({
                   </div>
                   <h2 className="text-lg font-semibold text-white">Site Information</h2>
                 </div>
-                {canManage && (
+                {canManage && !site.is_master && (
                   <Link
                     href={`/sites/${siteId}/edit`}
                     className="px-3 py-1.5 text-xs text-neutral-400 hover:text-white hover:bg-neutral-700 rounded-lg transition-colors"
@@ -114,12 +118,15 @@ async function SiteInventoryContent({
           <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-neutral-400">Total Products</p>
-                <p className="text-2xl font-bold text-white mt-1">{inventory.length}</p>
+                <p className="text-sm text-neutral-400">Total Gasto</p>
+                <p className="text-2xl font-bold text-green-400 mt-1">
+                  R$ {stats.totalSpent.toFixed(2)}
+                </p>
+                <p className="text-xs text-neutral-500 mt-1">em compras</p>
               </div>
               <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center">
                 <svg className="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
             </div>
@@ -128,10 +135,11 @@ async function SiteInventoryContent({
           <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-neutral-400">Total Items</p>
+                <p className="text-sm text-neutral-400">Itens Comprados</p>
                 <p className="text-2xl font-bold text-white mt-1">
-                  {inventory.reduce((sum, item) => sum + item.quantity_on_hand, 0).toLocaleString()}
+                  {stats.totalItemsPurchased.toLocaleString()}
                 </p>
+                <p className="text-xs text-neutral-500 mt-1">quantidade total</p>
               </div>
               <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center">
                 <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -144,14 +152,20 @@ async function SiteInventoryContent({
           <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-neutral-400">Total Value</p>
-                <p className="text-2xl font-bold text-green-400 mt-1">
-                  R$ {inventory.reduce((sum, item) => sum + ((item.product.price || 0) * item.quantity_on_hand), 0).toFixed(2)}
+                <p className="text-sm text-neutral-400">Distribuições</p>
+                <p className="text-2xl font-bold text-amber-400 mt-1">
+                  {stats.totalDistributions}
+                </p>
+                <p className="text-xs text-neutral-500 mt-1">
+                  {stats.lastPurchaseDate 
+                    ? `última: ${new Date(stats.lastPurchaseDate).toLocaleDateString('pt-BR')}`
+                    : 'nenhuma ainda'
+                  }
                 </p>
               </div>
               <div className="w-12 h-12 bg-amber-500/20 rounded-lg flex items-center justify-center">
                 <svg className="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                 </svg>
               </div>
             </div>

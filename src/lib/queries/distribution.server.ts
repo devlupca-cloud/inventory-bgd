@@ -13,6 +13,8 @@ export interface DistributionItem {
   unit_price: number | null
   site_id: string | null // Original site from purchase request (if any)
   site_name: string | null
+  target_site_id: string | null // Target site where item should be distributed
+  target_site_name: string | null
 }
 
 /**
@@ -54,7 +56,9 @@ export async function getDistributionItems(): Promise<DistributionItem[]> {
       quantity_requested,
       quantity_received,
       unit_price,
-      product:products(id, name, unit)
+      target_site_id,
+      product:products(id, name, unit),
+      target_site:sites(id, name)
     `)
     .in('purchase_request_id', requestIds)
     .gt('quantity_received', 0)
@@ -126,6 +130,8 @@ export async function getDistributionItems(): Promise<DistributionItem[]> {
         unit_price: itemData.unit_price || null,
         site_id: requestData.site_id === masterSite.id ? null : requestData.site_id,
         site_name: requestData.site?.id === masterSite.id ? null : requestData.site?.name || null,
+        target_site_id: itemData.target_site_id || null,
+        target_site_name: itemData.target_site?.name || null,
       })
     }
   }

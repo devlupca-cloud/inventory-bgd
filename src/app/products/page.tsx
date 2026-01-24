@@ -20,7 +20,7 @@ async function ProductsContent() {
 
   return (
     <div className="min-h-screen bg-black">
-      <AppHeaderWrapper variant="simple" title="Manage Products" backHref="/inventory" />
+      <AppHeaderWrapper variant="simple" title="Manage Products" backHref="/" />
 
       {/* Main Content */}
       <main className="lg:ml-64 max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { DistributionItem } from '@/lib/queries/distribution.server'
+import { FlexibleDistributionItem } from '@/lib/queries/distribution-flexible.server'
 import { getSites } from '@/lib/queries/sites'
 import { transferBetweenSites } from '@/lib/rpc/inventory'
 import { createClient } from '@/lib/supabase/client'
@@ -12,6 +13,7 @@ import Select from '@/components/ui/Select'
 interface DistributionFormProps {
   requestId: string
   items: DistributionItem[]
+  flexibleItems?: FlexibleDistributionItem[]
 }
 
 interface DistributionPlan {
@@ -20,7 +22,7 @@ interface DistributionPlan {
   }
 }
 
-export default function DistributionForm({ requestId, items }: DistributionFormProps) {
+export default function DistributionForm({ requestId, items, flexibleItems }: DistributionFormProps) {
   const router = useRouter()
   const supabase = createClient()
   const [sites, setSites] = useState<Array<{ id: string; name: string }>>([])
@@ -30,9 +32,40 @@ export default function DistributionForm({ requestId, items }: DistributionFormP
   const [distributionPlan, setDistributionPlan] = useState<DistributionPlan>({})
   const [masterSiteId, setMasterSiteId] = useState<string | null>(null)
 
+  // Use flexible items if available, otherwise fall back to regular items
+  const displayItems = flexibleItems && flexibleItems.length > 0 
+    ? flexibleItems.map(flex => ({
+        product_id: flex.product_id,
+        product_name: flex.product_name,
+        product_unit: flex.product_unit,
+        purchase_request_item_id: flex.from_request?.purchase_request_item_id || `flex-${flex.product_id}`,
+        quantity_available: flex.master_stock,
+        target_site_id: flex.from_request?.target_site_id || null,
+        target_site_name: flex.from_request?.target_site_name || null,
+        from_request: flex.from_request,
+        additional_stock: flex.additional_stock,
+      }))
+    : items
+
   useEffect(() => {
     loadSites()
-  }, [])
+    // Pre-fill distribution plan with target_site_id when available
+    const initialPlan: DistributionPlan = {}
+    displayItems.forEach((item: any) => {
+      const itemId = item.purchase_request_item_id || `flex-${item.product_id}`
+      if (item.target_site_id && item.quantity_available > 0) {
+        if (!initialPlan[itemId]) {
+          initialPlan[itemId] = {}
+        }
+        // Pre-fill with available quantity for target site (from request if available, otherwise use master stock)
+        const quantityToPreFill = item.from_request?.quantity_available || item.quantity_available
+        initialPlan[itemId][item.target_site_id] = quantityToPreFill
+      }
+    })
+    if (Object.keys(initialPlan).length > 0) {
+      setDistributionPlan(initialPlan)
+    }
+  }, [items, flexibleItems])
 
   const loadSites = async () => {
     try {
@@ -71,8 +104,9 @@ export default function DistributionForm({ requestId, items }: DistributionFormP
       .reduce((sum, qty) => sum + qty, 0)
   }
 
-  const getRemaining = (item: DistributionItem): number => {
-    const distributed = getTotalDistributed(item.purchase_request_item_id)
+  const getRemaining = (item: DistributionItem | any): number => {
+    const itemId = item.purchase_request_item_id || `flex-${item.product_id}`
+    const distributed = getTotalDistributed(itemId)
     return item.quantity_available - distributed
   }
 
@@ -93,9 +127,10 @@ export default function DistributionForm({ requestId, items }: DistributionFormP
     }
 
     // Validate no item exceeds available quantity
-    for (const item of items) {
-      const remaining = getRemaining(item)
-      if (remaining < 0) {
+    for (const item of displayItems) {
+      const itemId = item.purchase_request_item_id || `flex-${item.product_id}`
+      const distributed = getTotalDistributed(itemId)
+      if (distributed > item.quantity_available) {
         setError(`Cannot distribute more than available for ${item.product_name}`)
         return
       }
@@ -108,8 +143,9 @@ export default function DistributionForm({ requestId, items }: DistributionFormP
     try {
       // Create transfers for each distribution
       const transfers = []
-      for (const item of items) {
-        const itemPlan = distributionPlan[item.purchase_request_item_id] || {}
+      for (const item of displayItems) {
+        const itemId = item.purchase_request_item_id || `flex-${item.product_id}`
+        const itemPlan = distributionPlan[itemId] || {}
         for (const [siteId, quantity] of Object.entries(itemPlan)) {
           if (quantity && quantity > 0) {
             transfers.push({
@@ -152,11 +188,19 @@ export default function DistributionForm({ requestId, items }: DistributionFormP
   return (
     <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">
       <h3 className="text-lg font-semibold text-white mb-4">Items Available for Distribution</h3>
+      {flexibleItems && flexibleItems.length > 0 && (
+        <p className="text-sm text-neutral-400 mb-4">
+          Showing all products available in Master Warehouse. You can distribute items from this request or use other stock.
+        </p>
+      )}
       
       <div className="space-y-6">
-        {items.map((item) => {
-          const remaining = getRemaining(item)
+        {displayItems.map((item: any) => {
+          const remaining = item.from_request 
+            ? (item.from_request.quantity_available - (getTotalDistributed(item.purchase_request_item_id) || 0))
+            : (item.quantity_available - (getTotalDistributed(item.purchase_request_item_id) || 0))
           const distributed = getTotalDistributed(item.purchase_request_item_id)
+          const hasAdditionalStock = item.additional_stock && item.additional_stock > 0
           
           return (
             <div key={item.purchase_request_item_id} className="border border-neutral-800 rounded-lg p-4">
@@ -164,16 +208,28 @@ export default function DistributionForm({ requestId, items }: DistributionFormP
                 <div>
                   <h4 className="text-white font-medium">{item.product_name}</h4>
                   <p className="text-sm text-neutral-400 mt-1">
-                    Available: <span className="text-green-400 font-medium">{item.quantity_available.toLocaleString()}</span> {item.product_unit}
-                    {item.site_name && (
-                      <span className="ml-2">• Original site: {item.site_name}</span>
+                    <span className="text-green-400 font-medium">Total in Master: {item.quantity_available.toLocaleString()}</span> {item.product_unit}
+                    {item.from_request && (
+                      <>
+                        <span className="ml-2 text-blue-400">
+                          (From Request: {item.from_request.quantity_available.toLocaleString()})
+                        </span>
+                        {hasAdditionalStock && (
+                          <span className="ml-2 text-amber-400">
+                            (+ {item.additional_stock.toLocaleString()} from other sources)
+                          </span>
+                        )}
+                      </>
+                    )}
+                    {item.target_site_name && (
+                      <span className="ml-2 text-blue-400">→ Target: {item.target_site_name}</span>
                     )}
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-neutral-500">Distributing</p>
                   <p className="text-lg font-bold text-blue-400">{distributed.toLocaleString()}</p>
-                  <p className="text-xs text-neutral-500">Remaining: {remaining.toLocaleString()}</p>
+                  <p className="text-xs text-neutral-500">Available: {remaining.toLocaleString()}</p>
                 </div>
               </div>
 
@@ -189,7 +245,7 @@ export default function DistributionForm({ requestId, items }: DistributionFormP
                         <Input
                           type="number"
                           min="0"
-                          max={remaining + currentQty}
+                          max={item.quantity_available + currentQty}
                           step="0.01"
                           value={currentQty || ''}
                           onChange={(e) => {

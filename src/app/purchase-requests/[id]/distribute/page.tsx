@@ -1,6 +1,7 @@
 import ProtectedRoute from '@/components/auth/ProtectedRoute'
 import { getPurchaseRequest } from '@/lib/queries/purchase-requests.server'
 import { getDistributionItems } from '@/lib/queries/distribution.server'
+import { getFlexibleDistributionItems } from '@/lib/queries/distribution-flexible.server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { hasRole } from '@/lib/utils/permissions'
@@ -25,13 +26,16 @@ async function DistributeContent({
 }) {
   const { id } = await params
   const request = await getPurchaseRequest(id)
-  const distributionItems = await getDistributionItems()
-
+  
   if (!request) {
     notFound()
   }
 
-  // Filter items for this specific purchase request
+  // Get flexible distribution items (includes master stock beyond just this request)
+  const flexibleItems = await getFlexibleDistributionItems(id)
+  
+  // Also get traditional distribution items for backward compatibility
+  const distributionItems = await getDistributionItems()
   const requestItems = distributionItems.filter(item => item.purchase_request_id === id)
 
   if (requestItems.length === 0) {
@@ -92,11 +96,11 @@ async function DistributeContent({
         <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 mb-6">
           <h2 className="text-lg font-semibold text-white mb-2">Purchase Request #{id.substring(0, 8)}</h2>
           <p className="text-sm text-neutral-400">
-            Distribute items from Master Warehouse to sites. You can distribute partially or completely.
+            Distribute items from Master Warehouse to sites. You can use items from this request or any other stock available in the master warehouse.
           </p>
         </div>
 
-        <DistributionForm requestId={id} items={requestItems} />
+        <DistributionForm requestId={id} items={requestItems} flexibleItems={flexibleItems} />
       </main>
     </div>
   )

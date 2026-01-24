@@ -15,12 +15,12 @@ export default async function SitesPage() {
 }
 
 async function SitesContent() {
-  const sites = await getSites()
+  const sites = await getSites(true) // Include master site in the list
   const canManage = await hasRole(['manager', 'owner'])
 
   return (
     <div className="min-h-screen bg-black">
-      <AppHeaderWrapper variant="simple" title="Manage Sites" backHref="/inventory" />
+      <AppHeaderWrapper variant="simple" title="Manage Sites" backHref="/" />
 
       {/* Main Content */}
       <main className="lg:ml-64 max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">

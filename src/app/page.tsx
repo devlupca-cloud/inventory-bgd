@@ -20,23 +20,111 @@ export default async function DashboardPage() {
       <AppHeaderWrapper variant="full" sticky />
 
       <main className="lg:ml-64 max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        {/* Summary Cards */}
+        <section className="mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Monthly Spending */}
+            <div className="bg-gradient-to-br from-green-500/20 to-green-600/20 border border-green-500/30 rounded-xl p-5">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm text-neutral-400">Monthly Spending</p>
+                <div className="w-10 h-10 bg-green-500/30 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-green-400">
+                R$ {dashboard.stats.monthlySpending.toFixed(2)}
+              </p>
+              <p className="text-xs text-neutral-500 mt-1">This month</p>
+            </div>
+
+            {/* Pending Requests */}
+            <div className="bg-gradient-to-br from-amber-500/20 to-amber-600/20 border border-amber-500/30 rounded-xl p-5">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm text-neutral-400">Pending Requests</p>
+                <div className="w-10 h-10 bg-amber-500/30 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-amber-400">
+                {dashboard.stats.totalPendingRequests}
+              </p>
+              <p className="text-xs text-neutral-500 mt-1">Awaiting approval</p>
+            </div>
+
+            {/* Fulfilled Requests */}
+            <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/20 border border-blue-500/30 rounded-xl p-5">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm text-neutral-400">Fulfilled Requests</p>
+                <div className="w-10 h-10 bg-blue-500/30 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-blue-400">
+                {dashboard.stats.fulfilledRequests}
+              </p>
+              <p className="text-xs text-neutral-500 mt-1">This month</p>
+            </div>
+
+            {/* Low Stock Alerts */}
+            <div className="bg-gradient-to-br from-red-500/20 to-red-600/20 border border-red-500/30 rounded-xl p-5">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm text-neutral-400">Low Stock Alerts</p>
+                <div className="w-10 h-10 bg-red-500/30 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-red-400">
+                {dashboard.stats.totalAlerts}
+              </p>
+              <p className="text-xs text-neutral-500 mt-1">Require attention</p>
+            </div>
+          </div>
+        </section>
+
+        {/* Master Warehouse Quick Access */}
+        {dashboard.masterSite && (
+          <section className="mb-8">
+            <Link
+              href="/inventory/master"
+              className="block bg-gradient-to-r from-green-500/20 to-green-600/20 border border-green-500/30 rounded-xl p-6 hover:border-green-500/50 hover:from-green-500/30 hover:to-green-600/30 transition-all group"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="w-16 h-16 bg-green-500/30 rounded-xl flex items-center justify-center group-hover:bg-green-500/40 transition-colors">
+                    <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white mb-1">{dashboard.masterSite.name}</h3>
+                    <p className="text-sm text-neutral-400">
+                      {dashboard.masterSite.total_products} products • Central warehouse for all sites
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center text-green-400 group-hover:text-green-300 transition-colors">
+                  <span className="mr-2">View</span>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </div>
+            </Link>
+          </section>
+        )}
+
         {/* Quick Actions */}
         <section className="mb-8">
           <h2 className="text-lg font-semibold text-white mb-4">Quick Actions</h2>
           <QuickActions />
-          <div className="mt-3">
-            <Link
-              href="/purchase-requests/new"
-              className="inline-flex items-center justify-center p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl hover:bg-amber-500/20 hover:border-amber-500/50 transition-all group"
-            >
-              <div className="w-12 h-12 bg-amber-500/20 rounded-xl flex items-center justify-center mr-3 group-hover:bg-amber-500/30 transition-colors">
-                <svg className="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <span className="text-sm font-medium text-amber-500">New Purchase Request</span>
-            </Link>
-          </div>
         </section>
 
         {/* Low Stock Alerts */}
@@ -101,7 +189,7 @@ export default async function DashboardPage() {
                     href={`/purchase-requests/${request.id}`}
                     className="p-4 flex items-center justify-between hover:bg-neutral-800/50 transition-colors block"
                   >
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-4 flex-1">
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                         request.status === 'submitted' ? 'bg-amber-500/20' : 'bg-green-500/20'
                       }`}>
@@ -109,20 +197,20 @@ export default async function DashboardPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <p className="text-sm font-medium text-white">{request.site_name}</p>
                         <p className="text-xs text-neutral-500">
-                          by {request.requested_by_name || request.requested_by_email}
+                          by {request.requested_by_name || request.requested_by_email} • {request.item_count} items
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right ml-4">
                       <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
                         request.status === 'submitted' 
                           ? 'bg-amber-500/20 text-amber-400' 
                           : 'bg-green-500/20 text-green-400'
                       }`}>
-                        {request.status}
+                        {request.status === 'submitted' ? 'Awaiting Approval' : 'Approved'}
                       </span>
                       <p className="text-xs text-neutral-500 mt-1">
                         {new Date(request.created_at).toLocaleDateString()}
@@ -136,48 +224,52 @@ export default async function DashboardPage() {
         )}
 
         {/* Sites Overview */}
-        <section className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-white">Sites Overview</h2>
-            <Link href="/inventory" className="text-sm text-green-500 hover:text-green-400 transition-colors">
-              View inventory →
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {dashboard.siteSummaries.map((site) => (
-              <Link
-                key={site.id}
-                href={`/inventory/${site.id}`}
-                className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 hover:border-green-500/50 hover:bg-neutral-800/50 transition-all group"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center group-hover:bg-green-500/30 transition-colors">
-                    <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                  </div>
-                  {site.low_stock_count > 0 && (
-                    <span className="px-2 py-1 text-xs font-medium bg-red-500/20 text-red-400 rounded-full">
-                      {site.low_stock_count} low
-                    </span>
-                  )}
-                </div>
-                <h3 className="text-base font-semibold text-white">{site.name}</h3>
-                {site.address && (
-                  <p className="text-xs text-neutral-500 mt-1 truncate">{site.address}</p>
-                )}
-                <div className="flex items-center justify-between mt-3 pt-3 border-t border-neutral-800">
-                  <span className="text-xs text-neutral-400">{site.total_products} products</span>
-                  {site.last_movement && (
-                    <span className="text-xs text-neutral-500">
-                      Last: {new Date(site.last_movement).toLocaleDateString()}
-                    </span>
-                  )}
-                </div>
+        {dashboard.siteSummaries.length > 0 && (
+          <section className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-white">Sites</h2>
+              <Link href="/sites" className="text-sm text-green-500 hover:text-green-400 transition-colors">
+                Manage sites →
               </Link>
-            ))}
-          </div>
-        </section>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {dashboard.siteSummaries.map((site) => (
+                <Link
+                  key={site.id}
+                  href={`/inventory/${site.id}`}
+                  className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 hover:border-green-500/50 hover:bg-neutral-800/50 transition-all group"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center group-hover:bg-green-500/30 transition-colors">
+                      <svg className="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                    </div>
+                    {site.low_stock_count > 0 && (
+                      <span className="px-2 py-1 text-xs font-medium bg-red-500/20 text-red-400 rounded-full">
+                        {site.low_stock_count} alert{site.low_stock_count !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-lg font-semibold text-white mb-1">{site.name}</h3>
+                  {site.address && (
+                    <p className="text-xs text-neutral-500 mb-3 truncate">{site.address}</p>
+                  )}
+                  <div className="flex items-center justify-between pt-3 border-t border-neutral-800">
+                    <div>
+                      <p className="text-xs text-neutral-400">{site.total_products} products</p>
+                    </div>
+                    {site.last_movement && (
+                      <p className="text-xs text-neutral-500">
+                        Updated {new Date(site.last_movement).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Recent Activity */}
         {dashboard.recentMovements.length > 0 && (
@@ -250,11 +342,11 @@ export default async function DashboardPage() {
               </svg>
               <span className="text-xs mt-1">Home</span>
             </Link>
-            <Link href="/inventory" className="flex flex-col items-center justify-center text-neutral-400 hover:text-white">
+            <Link href="/inventory/master" className="flex flex-col items-center justify-center text-neutral-400 hover:text-white">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
               </svg>
-              <span className="text-xs mt-1">Inventory</span>
+              <span className="text-xs mt-1">Master</span>
             </Link>
             <Link href="/alerts" className="flex flex-col items-center justify-center text-neutral-400 hover:text-white relative">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

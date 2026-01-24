@@ -24,6 +24,10 @@ export interface PurchaseRequest {
     email: string
     full_name: string | null
   } | null
+  // Aggregated stats
+  total_items?: number
+  total_value_estimated?: number
+  total_value_spent?: number
 }
 
 export interface PurchaseRequestItem {
@@ -35,12 +39,17 @@ export interface PurchaseRequestItem {
   unit_price: number | null
   current_quantity_observed: number | null
   notes: string | null
+  target_site_id: string | null
   product: {
     id: string
     name: string
     unit: string
     price: number
   }
+  target_site?: {
+    id: string
+    name: string
+  } | null
 }
 
 export async function getPurchaseRequests(): Promise<PurchaseRequest[]> {
@@ -71,14 +80,47 @@ export async function getPurchaseRequests(): Promise<PurchaseRequest[]> {
   // Map users to requests
   const userMap = new Map((users || []).map((u: { id: string; email: string; full_name: string | null }) => [u.id, u]))
   
-  return (requests || []).map((request: any) => ({
-    ...request,
-    requested_by_user: userMap.get(request.requested_by) || {
-      id: request.requested_by,
-      email: 'Unknown',
-      full_name: null
+  // Get items for all requests to calculate totals
+  const requestIds = requests.map((r: { id: string }) => r.id)
+  const { data: allItems, error: itemsError } = await supabase
+    .from('purchase_request_items')
+    .select('purchase_request_id, quantity_requested, quantity_received, unit_price')
+    .in('purchase_request_id', requestIds)
+  
+  if (itemsError) throw itemsError
+  
+  // Group items by request_id
+  const itemsByRequest = new Map<string, any[]>()
+  allItems?.forEach((item: any) => {
+    const requestId = item.purchase_request_id
+    if (!itemsByRequest.has(requestId)) {
+      itemsByRequest.set(requestId, [])
     }
-  }))
+    itemsByRequest.get(requestId)!.push(item)
+  })
+  
+  return (requests || []).map((request: any) => {
+    const items = itemsByRequest.get(request.id) || []
+    const totalItems = items.length
+    const totalValueEstimated = items.reduce((sum: number, item: any) => 
+      sum + (item.quantity_requested || 0) * (item.unit_price || 0), 0
+    )
+    const totalValueSpent = items.reduce((sum: number, item: any) => 
+      sum + (item.quantity_received || 0) * (item.unit_price || 0), 0
+    )
+    
+    return {
+      ...request,
+      requested_by_user: userMap.get(request.requested_by) || {
+        id: request.requested_by,
+        email: 'Unknown',
+        full_name: null
+      },
+      total_items: totalItems,
+      total_value_estimated: totalValueEstimated,
+      total_value_spent: totalValueSpent,
+    }
+  })
 }
 
 export async function getPurchaseRequest(requestId: string): Promise<PurchaseRequest | null> {
@@ -135,7 +177,8 @@ export async function getPurchaseRequestItems(requestId: string): Promise<Purcha
     .from('purchase_request_items')
     .select(`
       *,
-      product:products(*)
+      product:products(*),
+      target_site:sites(id, name)
     `)
     .eq('purchase_request_id', requestId)
     .order('id')

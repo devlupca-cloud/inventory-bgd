@@ -14,6 +14,9 @@ export interface Database {
           id: string
           name: string
           address: string | null
+          supervisor_name: string | null
+          supervisor_phone: string | null
+          is_master: boolean
           created_at: string
           updated_at: string
           deleted_at: string | null
@@ -22,6 +25,9 @@ export interface Database {
           id?: string
           name: string
           address?: string | null
+          supervisor_name?: string | null
+          supervisor_phone?: string | null
+          is_master?: boolean
           created_at?: string
           updated_at?: string
           deleted_at?: string | null
@@ -30,6 +36,9 @@ export interface Database {
           id?: string
           name?: string
           address?: string | null
+          supervisor_name?: string | null
+          supervisor_phone?: string | null
+          is_master?: boolean
           created_at?: string
           updated_at?: string
           deleted_at?: string | null
@@ -183,6 +192,7 @@ export interface Database {
           quantity_received: number
           unit_price: number | null
           notes: string | null
+          target_site_id: string | null
         }
         Insert: {
           id?: string
@@ -192,6 +202,7 @@ export interface Database {
           quantity_received?: number
           unit_price?: number | null
           notes?: string | null
+          target_site_id?: string | null
         }
         Update: {
           id?: string
@@ -201,6 +212,7 @@ export interface Database {
           quantity_received?: number
           unit_price?: number | null
           notes?: string | null
+          target_site_id?: string | null
         }
       }
       user_profiles: {

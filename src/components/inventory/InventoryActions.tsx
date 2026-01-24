@@ -1,8 +1,6 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import StockInModal from '@/components/modals/StockInModal'
-import StockOutModal from '@/components/modals/StockOutModal'
 import TransferModal from '@/components/modals/TransferModal'
 
 interface InventoryActionsProps {
@@ -13,36 +11,12 @@ interface InventoryActionsProps {
   isMaster?: boolean
 }
 
-export default function InventoryActions({ siteId, productId, canManage, canSupervise, isMaster }: InventoryActionsProps) {
-  const [stockInOpen, setStockInOpen] = useState(false)
-  const [stockOutOpen, setStockOutOpen] = useState(false)
+export default function InventoryActions({ siteId, productId, canManage, isMaster }: InventoryActionsProps) {
   const [transferOpen, setTransferOpen] = useState(false)
 
   return (
     <>
       <div className="flex items-center justify-end space-x-2">
-        {canManage && (
-          <button
-            onClick={() => setStockInOpen(true)}
-            className="px-2 py-1 text-xs text-green-400 hover:text-green-300 hover:bg-green-500/10 rounded transition-colors"
-            title="Stock IN"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-          </button>
-        )}
-        {canSupervise && (
-          <button
-            onClick={() => setStockOutOpen(true)}
-            className="px-2 py-1 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
-            title="Stock OUT"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-            </svg>
-          </button>
-        )}
         {canManage && (
           <button
             onClick={() => setTransferOpen(true)}
@@ -66,8 +40,6 @@ export default function InventoryActions({ siteId, productId, canManage, canSupe
         </Link>
       </div>
 
-      <StockInModal isOpen={stockInOpen} onClose={() => setStockInOpen(false)} initialSiteId={siteId} initialProductId={productId} />
-      <StockOutModal isOpen={stockOutOpen} onClose={() => setStockOutOpen(false)} initialSiteId={siteId} initialProductId={productId} />
       <TransferModal isOpen={transferOpen} onClose={() => setTransferOpen(false)} initialFromSiteId={siteId} initialProductId={productId} />
     </>
   )

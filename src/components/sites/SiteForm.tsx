@@ -21,6 +21,7 @@ export default function SiteForm({ site }: SiteFormProps) {
   const supabase = createClient()
   const router = useRouter()
   const isEditing = !!site
+  const isMaster = site?.is_master || false
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -35,6 +36,13 @@ export default function SiteForm({ site }: SiteFormProps) {
     }
 
     try {
+      // Prevent editing master site
+      if (isEditing && isMaster) {
+        setError('Master warehouse cannot be edited')
+        setLoading(false)
+        return
+      }
+
       if (isEditing) {
         const { error: updateError } = await supabase
           .from('sites')
@@ -76,6 +84,14 @@ export default function SiteForm({ site }: SiteFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {isMaster && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 mb-4">
+          <p className="text-sm text-amber-400">
+            <strong>Master Warehouse:</strong> This is the master warehouse. It cannot be edited or deleted.
+          </p>
+        </div>
+      )}
+
       <Input
         label="Site Name"
         type="text"
@@ -83,6 +99,7 @@ export default function SiteForm({ site }: SiteFormProps) {
         onChange={(e) => setName(e.target.value)}
         placeholder="e.g., Downtown Office"
         required
+        disabled={isMaster}
       />
 
       <Input
@@ -91,6 +108,7 @@ export default function SiteForm({ site }: SiteFormProps) {
         value={address}
         onChange={(e) => setAddress(e.target.value)}
         placeholder="e.g., 123 Main St, City, State 12345"
+        disabled={isMaster}
       />
 
       <div className="border-t border-neutral-800 pt-5">
@@ -102,6 +120,7 @@ export default function SiteForm({ site }: SiteFormProps) {
             value={supervisorName}
             onChange={(e) => setSupervisorName(e.target.value)}
             placeholder="e.g., João Silva"
+            disabled={isMaster}
           />
 
           <Input
@@ -110,6 +129,7 @@ export default function SiteForm({ site }: SiteFormProps) {
             value={supervisorPhone}
             onChange={(e) => setSupervisorPhone(e.target.value)}
             placeholder="e.g., +5511999999999"
+            disabled={isMaster}
           />
         </div>
       </div>
@@ -127,8 +147,8 @@ export default function SiteForm({ site }: SiteFormProps) {
       )}
 
       <div className="flex space-x-4">
-        <Button type="submit" disabled={loading}>
-          {loading ? 'Saving...' : isEditing ? 'Update Site' : 'Create Site'}
+        <Button type="submit" disabled={loading || isMaster}>
+          {loading ? 'Saving...' : isEditing ? (isMaster ? 'Cannot Edit Master' : 'Update Site') : 'Create Site'}
         </Button>
         <Button
           type="button"

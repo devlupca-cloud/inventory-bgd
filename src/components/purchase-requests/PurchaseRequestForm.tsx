@@ -2,37 +2,87 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getProductsClient, Product } from '@/lib/queries/products'
+import { getSites } from '@/lib/queries/sites'
 import Select from '@/components/ui/Select'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
-import SiteSelector from '@/components/inventory/SiteSelector'
 import { useRouter } from 'next/navigation'
 
 interface PurchaseRequestItem {
   product_id: string
   quantity_requested: number
   unit_price: number
+  target_site_id?: string
   notes?: string
 }
 
-interface PurchaseRequestFormProps {
-  initialSiteId?: string
-}
+interface PurchaseRequestFormProps {}
 
-export default function PurchaseRequestForm({ initialSiteId = '' }: PurchaseRequestFormProps) {
-  const [selectedSiteId, setSelectedSiteId] = useState<string>(initialSiteId)
+export default function PurchaseRequestForm({}: PurchaseRequestFormProps) {
   const [items, setItems] = useState<PurchaseRequestItem[]>([])
   const [products, setProducts] = useState<Product[]>([])
+  const [sites, setSites] = useState<Array<{ id: string; name: string; is_master: boolean }>>([])
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [userSiteId, setUserSiteId] = useState<string | null>(null)
+  const [userRole, setUserRole] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
     loadProducts()
+    loadSites()
+    loadUserSite()
   }, [])
+
+  const loadUserSite = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // Get user profile and role
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+      
+      if (profile) {
+        setUserRole(profile.role)
+        
+        // If supervisor, get their site
+        if (profile.role === 'supervisor') {
+          const { data: siteRole } = await supabase
+            .from('site_user_roles')
+            .select('site_id')
+            .eq('user_id', user.id)
+            .single()
+          
+          if (siteRole) {
+            setUserSiteId(siteRole.site_id)
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error loading user site:', err)
+    }
+  }
+
+  const loadSites = async () => {
+    try {
+      const data = await getSites()
+      // Filter out master site from target options
+      setSites(data.filter(site => !site.is_master).map(site => ({
+        id: site.id,
+        name: site.name,
+        is_master: site.is_master
+      })))
+    } catch (err) {
+      console.error('Error loading sites:', err)
+    }
+  }
 
   const loadProducts = async () => {
     try {
@@ -45,7 +95,9 @@ export default function PurchaseRequestForm({ initialSiteId = '' }: PurchaseRequ
 
 
   const addItem = () => {
-    setItems([...items, { product_id: '', quantity_requested: 0, unit_price: 0 }])
+    // Auto-fill target_site_id with user's site if supervisor
+    const defaultTargetSite = userRole === 'supervisor' && userSiteId ? userSiteId : ''
+    setItems([...items, { product_id: '', quantity_requested: 0, unit_price: 0, target_site_id: defaultTargetSite }])
   }
 
   const removeItem = (index: number) => {
@@ -64,11 +116,7 @@ export default function PurchaseRequestForm({ initialSiteId = '' }: PurchaseRequ
     setError('')
     setSuccess(false)
 
-    if (!selectedSiteId) {
-      setError('Please select a site')
-      setLoading(false)
-      return
-    }
+    // Requesting site is now optional - can create general purchase requests
 
     if (items.length === 0) {
       setError('Please add at least one item')
@@ -84,13 +132,14 @@ export default function PurchaseRequestForm({ initialSiteId = '' }: PurchaseRequ
         return
       }
 
-      // Create purchase request (as draft) - associated with the selected site
+      // Create purchase request (as draft) - no site_id needed
       // Items will be purchased and added to master warehouse, then distributed
+      // User is tracked via requested_by, target sites are in items
       const { data: request, error: requestError } = await supabase
         .from('purchase_requests')
-        // @ts-expect-error - Supabase type inference issue
+        // @ts-expect-error - Supabase type inference issue (site_id can be null)
         .insert({
-          site_id: selectedSiteId, // Site that is making the request
+          site_id: null, // No requesting site - user is tracked via requested_by
           status: 'draft',
           requested_by: user.id,
           notes: notes || null,
@@ -107,6 +156,7 @@ export default function PurchaseRequestForm({ initialSiteId = '' }: PurchaseRequ
         product_id: item.product_id,
         quantity_requested: item.quantity_requested,
         unit_price: item.unit_price || 0,
+        target_site_id: item.target_site_id || null,
         notes: item.notes || null,
       }))
 
@@ -133,16 +183,20 @@ export default function PurchaseRequestForm({ initialSiteId = '' }: PurchaseRequ
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-4">
         <p className="text-sm text-blue-400">
-          <strong>Purchase Request:</strong> Create a request for items you need. Items will be purchased and added to the master warehouse, then distributed to sites as needed.
+          <strong>Purchase Request:</strong> Create a request for items you need. 
+          Items will be purchased and added to the master warehouse, then distributed to the target sites you specify for each item below.
         </p>
+        {userRole === 'supervisor' && userSiteId && (
+          <p className="text-xs text-green-400 mt-2">
+            ✓ You are a supervisor. New items will be automatically set to your site ({sites.find(s => s.id === userSiteId)?.name || 'your site'}).
+          </p>
+        )}
+        {userRole === 'manager' && (
+          <p className="text-xs text-amber-400 mt-2">
+            💡 You are a manager. You can create requests with items for multiple sites.
+          </p>
+        )}
       </div>
-
-      <SiteSelector
-        label="Site"
-        value={selectedSiteId}
-        onChange={setSelectedSiteId}
-        disabled={!!initialSiteId}
-      />
 
       <div>
         <div className="flex justify-between items-center mb-4">
@@ -222,6 +276,29 @@ export default function PurchaseRequestForm({ initialSiteId = '' }: PurchaseRequ
                   placeholder="0.00"
                 />
               </div>
+
+              <Select
+                label="Target Site (where this item should be distributed)"
+                value={item.target_site_id || ''}
+                onChange={(e) => updateItem(index, 'target_site_id', e.target.value || undefined)}
+              >
+                <option value="">Select target site (optional)</option>
+                {sites.map((site) => (
+                  <option key={site.id} value={site.id}>
+                    {site.name}
+                  </option>
+                ))}
+              </Select>
+              {!item.target_site_id && (
+                <p className="text-xs text-amber-400 mt-1">
+                  ⚠️ No target site specified. This item will need manual distribution after purchase.
+                </p>
+              )}
+              {item.target_site_id && (
+                <p className="text-xs text-green-400 mt-1">
+                  ✓ This item will be distributed to {sites.find(s => s.id === item.target_site_id)?.name || 'selected site'}
+                </p>
+              )}
 
               {item.quantity_requested > 0 && item.unit_price > 0 && (
                 <div className="text-right text-sm">

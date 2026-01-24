@@ -49,7 +49,7 @@ export default function SiteSelector({ value, onChange, label = 'Site', disabled
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
     >
-      <option value="">Select a site</option>
+      <option value="">No site (general request)</option>
       {sites.map((site) => (
         <option key={site.id} value={site.id}>
           {site.name}
