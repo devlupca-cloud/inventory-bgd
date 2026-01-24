@@ -49,6 +49,8 @@ export interface Database {
           id: string
           name: string
           unit: string
+          base_unit: string
+          units_per_package: number
           created_at: string
           updated_at: string
           deleted_at: string | null
@@ -57,6 +59,8 @@ export interface Database {
           id?: string
           name: string
           unit: string
+          base_unit?: string
+          units_per_package?: number
           created_at?: string
           updated_at?: string
           deleted_at?: string | null
@@ -65,6 +69,8 @@ export interface Database {
           id?: string
           name?: string
           unit?: string
+          base_unit?: string
+          units_per_package?: number
           created_at?: string
           updated_at?: string
           deleted_at?: string | null

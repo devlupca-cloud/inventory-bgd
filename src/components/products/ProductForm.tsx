@@ -15,6 +15,8 @@ interface ProductFormProps {
 export default function ProductForm({ product }: ProductFormProps) {
   const [name, setName] = useState(product?.name || '')
   const [unit, setUnit] = useState(product?.unit || '')
+  const [baseUnit, setBaseUnit] = useState(product?.base_unit || '')
+  const [unitsPerPackage, setUnitsPerPackage] = useState(product?.units_per_package?.toString() || '1')
   const [price, setPrice] = useState(product?.price?.toString() || '')
   const [units, setUnits] = useState<Unit[]>([])
   const [loading, setLoading] = useState(false)
@@ -50,7 +52,20 @@ export default function ProductForm({ product }: ProductFormProps) {
     }
 
     if (!unit.trim()) {
-      setError('Unit is required')
+      setError('Purchase unit is required')
+      setLoading(false)
+      return
+    }
+
+    if (!baseUnit.trim()) {
+      setError('Distribution unit is required')
+      setLoading(false)
+      return
+    }
+
+    const unitsPerPkgValue = parseFloat(unitsPerPackage) || 1
+    if (unitsPerPkgValue <= 0) {
+      setError('Units per package must be greater than 0')
       setLoading(false)
       return
     }
@@ -70,6 +85,8 @@ export default function ProductForm({ product }: ProductFormProps) {
           .update({
             name: name.trim(),
             unit: unit.trim(),
+            base_unit: baseUnit.trim(),
+            units_per_package: unitsPerPkgValue,
             price: priceValue,
           })
           .eq('id', product.id)
@@ -82,6 +99,8 @@ export default function ProductForm({ product }: ProductFormProps) {
           .insert({
             name: name.trim(),
             unit: unit.trim(),
+            base_unit: baseUnit.trim(),
+            units_per_package: unitsPerPkgValue,
             price: priceValue,
           })
 
@@ -107,33 +126,75 @@ export default function ProductForm({ product }: ProductFormProps) {
         type="text"
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="e.g., Paper Towels"
+        placeholder="e.g., Mop Head"
         required
       />
 
-      <Select
-        label="Unit"
-        value={unit}
-        onChange={(e) => setUnit(e.target.value)}
-        required
-      >
-        <option value="">Select a unit</option>
-        {units.map((u) => (
-          <option key={u.id} value={u.value}>
-            {u.label}
-          </option>
-        ))}
-      </Select>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Select
+          label="Purchase Unit"
+          value={unit}
+          onChange={(e) => setUnit(e.target.value)}
+          required
+        >
+          <option value="">Select purchase unit</option>
+          {units.map((u) => (
+            <option key={u.id} value={u.value}>
+              {u.label}
+            </option>
+          ))}
+        </Select>
 
-      <Input
-        label="Price (R$)"
-        type="number"
-        step="0.01"
-        min="0"
-        value={price}
-        onChange={(e) => setPrice(e.target.value)}
-        placeholder="0.00"
-      />
+        <Input
+          label="Price per Purchase Unit (R$)"
+          type="number"
+          step="0.01"
+          min="0"
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          placeholder="0.00"
+        />
+      </div>
+
+      <div className="border border-neutral-700 rounded-lg p-4 bg-neutral-800/30">
+        <h3 className="text-sm font-semibold text-white mb-3">Distribution Settings</h3>
+        <p className="text-xs text-neutral-400 mb-4">
+          Configure how this product can be distributed to sites. You can send full packages or individual units.
+        </p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input
+            label="Distribution Unit"
+            type="text"
+            value={baseUnit}
+            onChange={(e) => setBaseUnit(e.target.value)}
+            placeholder="e.g., unit, piece, bag"
+            required
+          />
+
+          <Input
+            label={`${baseUnit || 'Units'} per ${unit || 'Package'}`}
+            type="number"
+            step="0.01"
+            min="0.01"
+            value={unitsPerPackage}
+            onChange={(e) => setUnitsPerPackage(e.target.value)}
+            placeholder="e.g., 12"
+            required
+          />
+        </div>
+
+        {unit && baseUnit && unitsPerPackage && parseFloat(unitsPerPackage) > 0 && (
+          <div className="mt-3 p-3 bg-green-500/10 border border-green-500/30 rounded text-xs text-green-400">
+            <strong>Example:</strong> 1 {unit} = {unitsPerPackage} {baseUnit}
+            {parseFloat(price) > 0 && (
+              <>
+                {' '}• Cost per {baseUnit}: R$ {(parseFloat(price) / parseFloat(unitsPerPackage)).toFixed(2)}
+              </>
+            )}
+          </div>
+        )}
+      </div>
 
       {error && (
         <div className="bg-red-500/20 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg text-sm">

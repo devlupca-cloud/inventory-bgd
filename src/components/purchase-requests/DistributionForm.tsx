@@ -59,10 +59,16 @@ export default function DistributionForm({ requestId, items, flexibleItems }: Di
         if (!initialPlan[itemId]) {
           initialPlan[itemId] = {}
         }
-        // Pre-fill with available quantity for target site (from request if available, otherwise use master stock)
-        const quantityToPreFill = item.from_request?.quantity_available || item.quantity_available
-        // Distribution is integer-only
-        initialPlan[itemId][item.target_site_id] = Math.floor(quantityToPreFill)
+        // Pre-fill with REQUESTED quantity (not all available)
+        // This allows distributing remaining stock to other sites
+        const requestedQty = item.from_request?.quantity_requested || 0
+        const quantityToPreFill = Math.min(
+          Math.floor(requestedQty), // What was requested
+          availableInt // What's available
+        )
+        if (quantityToPreFill > 0) {
+          initialPlan[itemId][item.target_site_id] = quantityToPreFill
+        }
       }
     })
     if (Object.keys(initialPlan).length > 0) {
@@ -208,12 +214,29 @@ export default function DistributionForm({ requestId, items, flexibleItems }: Di
 
   return (
     <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">
-      <h3 className="text-lg font-semibold text-white mb-4">Items Available for Distribution</h3>
-      {flexibleItems && flexibleItems.length > 0 && (
-        <p className="text-sm text-neutral-400 mb-4">
-          Showing all products available in Master Warehouse. You can distribute items from this request or use other stock.
-        </p>
-      )}
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold text-white mb-2">Items Available for Distribution</h3>
+        {flexibleItems && flexibleItems.length > 0 && (
+          <p className="text-sm text-neutral-400">
+            Showing all products available in Master Warehouse. You can distribute items from this request or use other stock.
+          </p>
+        )}
+        <div className="mt-3 flex items-center gap-2 text-sm">
+          <div className="flex items-center gap-2 text-neutral-400">
+            <span className="text-green-500 font-semibold">FROM:</span>
+            <span className="bg-green-500/20 border border-green-500/30 px-3 py-1 rounded-lg text-white font-medium">
+              Master Warehouse
+            </span>
+          </div>
+          <svg className="w-5 h-5 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+          </svg>
+          <div className="flex items-center gap-2 text-neutral-400">
+            <span className="text-blue-500 font-semibold">TO:</span>
+            <span className="text-neutral-500">Select sites below for each product</span>
+          </div>
+        </div>
+      </div>
       
       {visibleItems.length === 0 ? (
         <div className="bg-neutral-800/30 border border-neutral-800 rounded-lg p-6 text-center text-neutral-500">
@@ -228,66 +251,94 @@ export default function DistributionForm({ requestId, items, flexibleItems }: Di
           const hasAdditionalStock = item.additional_stock && item.additional_stock > 0
           
           return (
-            <div key={itemId} className="border border-neutral-800 rounded-lg p-4">
+            <div key={itemId} className="border border-neutral-700 rounded-lg p-4 bg-neutral-800/30">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h4 className="text-white font-medium">{item.product_name}</h4>
-                  <p className="text-sm text-neutral-400 mt-1">
-                    <span className="text-green-400 font-medium">Total in Master: {getAvailableInt(item).toLocaleString()}</span> {item.product_unit}
+                  <h4 className="text-white font-medium text-lg">{item.product_name}</h4>
+                  <div className="text-sm text-neutral-400 mt-1 space-y-1">
+                    <div>
+                      <span className="text-green-400 font-medium">Total in Master: {getAvailableInt(item).toLocaleString()}</span> {item.product_unit}
+                    </div>
                     {item.from_request && (
-                      <>
-                        <span className="ml-2 text-blue-400">
-                          (From Request: {Math.floor(item.from_request.quantity_available || 0).toLocaleString()})
+                      <div className="flex items-center gap-2">
+                        <span className="text-blue-400">
+                          Requested: {Math.floor(item.from_request.quantity_requested || 0).toLocaleString()} {item.product_unit}
                         </span>
                         {hasAdditionalStock && (
-                          <span className="ml-2 text-amber-400">
-                            (+ {Math.floor(item.additional_stock || 0).toLocaleString()} from other sources)
+                          <span className="bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded text-amber-400 text-xs">
+                            + {Math.floor(item.additional_stock || 0).toLocaleString()} extra available
                           </span>
                         )}
-                      </>
+                      </div>
                     )}
                     {item.target_site_name && (
-                      <span className="ml-2 text-blue-400">→ Target: {item.target_site_name}</span>
+                      <span className="text-blue-400">→ Target: {item.target_site_name}</span>
                     )}
-                  </p>
+                  </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-neutral-500">Distributing</p>
-                  <p className="text-lg font-bold text-blue-400">{distributed.toLocaleString()}</p>
-                  <p className="text-xs text-neutral-500">Available: {remaining.toLocaleString()}</p>
+                  <p className="text-xs text-neutral-500 uppercase tracking-wide">Allocating</p>
+                  <p className="text-2xl font-bold text-blue-400">{distributed.toLocaleString()}</p>
+                  <p className="text-xs text-neutral-400 mt-1">
+                    Remaining: <span className={remaining > 0 ? 'text-green-400 font-medium' : 'text-neutral-500'}>{remaining.toLocaleString()}</span>
+                  </p>
                 </div>
               </div>
 
-              <div className="space-y-3">
-                {sites.map((site) => {
-                  const currentQty = distributionPlan[itemId]?.[site.id] || 0
-                  const maxForSite = getMaxForSite(item, site.id)
-                  return (
-                    <div key={site.id} className="flex items-center space-x-3">
-                      <div className="flex-1">
-                        <label className="text-sm text-neutral-400">{site.name}</label>
+              {/* Distribution to Sites */}
+              <div className="border-t border-neutral-700 pt-4 mt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                  </svg>
+                  <span className="text-sm font-semibold text-blue-400">Send to Sites:</span>
+                </div>
+                <div className="space-y-2">
+                  {sites.map((site) => {
+                    const currentQty = distributionPlan[itemId]?.[site.id] || 0
+                    const maxForSite = getMaxForSite(item, site.id)
+                    const isTargetSite = item.target_site_id === site.id
+                    return (
+                      <div 
+                        key={site.id} 
+                        className={`flex items-center space-x-3 p-2 rounded-lg ${
+                          isTargetSite ? 'bg-blue-500/10 border border-blue-500/30' : 'bg-neutral-900/50'
+                        }`}
+                      >
+                        <div className="flex-1">
+                          <label className={`text-sm font-medium ${
+                            isTargetSite ? 'text-blue-300' : 'text-neutral-300'
+                          }`}>
+                            {site.name}
+                            {isTargetSite && (
+                              <span className="ml-2 text-xs bg-blue-500/20 px-2 py-0.5 rounded text-blue-400">
+                                Requested
+                              </span>
+                            )}
+                          </label>
+                        </div>
+                        <div className="w-32">
+                          <Input
+                            type="number"
+                            min="0"
+                            max={maxForSite}
+                            step="1"
+                            value={currentQty || ''}
+                            onChange={(e) => {
+                              const raw = e.target.value
+                              const parsed = raw === '' ? 0 : parseInt(raw, 10)
+                              const value = Number.isFinite(parsed) ? parsed : 0
+                              const clamped = Math.min(Math.max(0, value), maxForSite)
+                              updateDistribution(itemId, site.id, clamped)
+                            }}
+                            placeholder="0"
+                          />
+                        </div>
+                        <span className="text-sm text-neutral-500 w-16">{item.product_unit}</span>
                       </div>
-                      <div className="w-32">
-                        <Input
-                          type="number"
-                          min="0"
-                          max={maxForSite}
-                          step="1"
-                          value={currentQty || ''}
-                          onChange={(e) => {
-                            const raw = e.target.value
-                            const parsed = raw === '' ? 0 : parseInt(raw, 10)
-                            const value = Number.isFinite(parsed) ? parsed : 0
-                            const clamped = Math.min(Math.max(0, value), maxForSite)
-                            updateDistribution(itemId, site.id, clamped)
-                          }}
-                          placeholder="0"
-                        />
-                      </div>
-                      <span className="text-sm text-neutral-500 w-12">{item.product_unit}</span>
-                    </div>
-                  )
-                })}
+                    )
+                  })}
+                </div>
               </div>
             </div>
           )

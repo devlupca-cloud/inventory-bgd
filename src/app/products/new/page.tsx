@@ -14,7 +14,7 @@ async function NewProductContent() {
   return (
     <div className="min-h-screen bg-black">
       {/* Navigation */}
-      <nav className="bg-neutral-900 border-b border-neutral-800">
+      <nav className="bg-neutral-900 border-b border-neutral-800 lg:ml-64">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center space-x-4">
@@ -32,7 +32,7 @@ async function NewProductContent() {
       </nav>
 
       {/* Main Content */}
-      <main className="max-w-2xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <main className="lg:ml-64 max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">
           <ProductForm />
         </div>
